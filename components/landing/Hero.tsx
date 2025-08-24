@@ -1,16 +1,24 @@
 'use client'
 
+import { memo, useCallback } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icons'
 
-export function Hero() {
+export const Hero = memo(function Hero() {
   const router = useRouter()
   
-  const handleGetStarted = () => {
+  const handleGetStarted = useCallback(() => {
     router.push('/onboarding')
-  }
+  }, [router])
+
+  const handleScrollToCommunity = useCallback(() => {
+    const communitySection = document.getElementById('community-section')
+    if (communitySection) {
+      communitySection.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [])
 
   return (
     <section className="pt-24 pb-8 md:pt-32 md:pb-12">
@@ -43,12 +51,7 @@ export function Hero() {
               size="default" 
               variant="outline"
               className="h-12 w-64 border-border hover:bg-muted hover-lift"
-              onClick={() => {
-                const communitySection = document.getElementById('community-section')
-                if (communitySection) {
-                  communitySection.scrollIntoView({ behavior: 'smooth' })
-                }
-              }}
+              onClick={handleScrollToCommunity}
             >
               <Icon name="users" className="mr-2 h-5 w-5" />
               Explore Community Projects
@@ -85,4 +88,4 @@ export function Hero() {
       </div>
     </section>
   )
-}
+})

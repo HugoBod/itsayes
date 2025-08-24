@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode } from 'react'
+import { ReactNode, memo } from 'react'
 import { Icon } from '@/components/ui/icons'
 import { OnboardingHeader } from '@/components/ui/onboarding-header'
 import { NavigationButton } from '@/components/ui/onboarding-button'
@@ -40,7 +40,7 @@ interface OnboardingLayoutProps {
   className?: string
 }
 
-export function OnboardingLayout({
+export const OnboardingLayout = memo(function OnboardingLayout({
   currentStep,
   totalSteps = 8,
   imageIcon,
@@ -77,7 +77,7 @@ export function OnboardingLayout({
                 <div className="text-center space-y-3 lg:space-y-4 p-4">
                   <div className="flex justify-center">
                     <div className="flex h-12 w-12 lg:h-16 lg:w-16 items-center justify-center rounded-full bg-white shadow-lg">
-                      <Icon name={imageIcon} className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
+                      <Icon name={imageIcon as any} className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -104,7 +104,7 @@ export function OnboardingLayout({
                   <div className="text-center space-y-3 sm:space-y-4 p-4">
                     <div className="flex justify-center">
                       <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-white shadow-lg">
-                        <Icon name={imageIcon} className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                        <Icon name={imageIcon as any} className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -163,4 +163,4 @@ export function OnboardingLayout({
       </div>
     </div>
   )
-}
+})

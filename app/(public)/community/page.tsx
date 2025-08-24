@@ -5,19 +5,24 @@ import { ProjectCard } from '@/components/landing/ProjectCard'
 import { ProjectFilters } from '@/components/ui/project-filters'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icons'
-import { supabase } from '@/lib/supabase'
+import { DEMO_PROJECTS, WEDDING_STYLES, FILTER_OPTIONS } from '@/lib/constants'
 
-const styles = ['All', 'Classic', 'Bohemian', 'Modern', 'Rustic', 'Beach', 'Garden', 'Vintage']
-const filters = ['Popular', 'Recent', 'Trending']
+type Project = {
+  id: string
+  name: string
+  description: string
+  wedding_date: string
+  style: string
+  guest_count: number
+  likes: number
+}
 
 export default function CommunityPage() {
   const [selectedFilter, setSelectedFilter] = useState('Popular')
   const [selectedStyle, setSelectedStyle] = useState<string | null>('All')
-  const [projects, setProjects] = useState<any[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
-  const projectsPerPage = 12
 
   useEffect(() => {
     fetchProjects(true)
@@ -26,59 +31,27 @@ export default function CommunityPage() {
   const fetchProjects = async (reset = false) => {
     setLoading(true)
     try {
-      const currentPage = reset ? 1 : page
-      if (reset) setPage(1)
+      // Simulate network delay for better UX
+      await new Promise(resolve => setTimeout(resolve, reset ? 800 : 400))
 
-      let query = supabase
-        .from('projects')
-        .select('*', { count: 'exact' })
-        .eq('is_public', true)
+      // Filter by style
+      let filteredProjects = selectedStyle && selectedStyle !== 'All' 
+        ? DEMO_PROJECTS.filter((project: Project) => project.style === selectedStyle)
+        : DEMO_PROJECTS
 
-      if (selectedStyle && selectedStyle !== 'All') {
-        query = query.eq('style', selectedStyle)
-      }
-
+      // Sort by filter
       if (selectedFilter === 'Recent') {
-        query = query.order('created_at', { ascending: false })
+        filteredProjects = filteredProjects.sort((a: Project, b: Project) => new Date(b.wedding_date).getTime() - new Date(a.wedding_date).getTime())
       } else if (selectedFilter === 'Popular') {
-        query = query.order('likes', { ascending: false })
+        filteredProjects = filteredProjects.sort((a: Project, b: Project) => b.likes - a.likes)
       } else if (selectedFilter === 'Trending') {
-        query = query.order('views', { ascending: false })
+        filteredProjects = filteredProjects.sort((a: Project, b: Project) => b.guest_count - a.guest_count)
       }
 
-      query = query.range((currentPage - 1) * projectsPerPage, currentPage * projectsPerPage - 1)
-
-      const { data, error, count } = await query
-
-      if (error) {
-        console.warn('Database not configured, using demo data')
-        // Données de démo plus complètes
-        const demoProjects = [
-          { id: '1', name: 'Romantic Garden Wedding', description: 'Beautiful outdoor ceremony', wedding_date: '2024-06-15', style: 'Garden', guest_count: 120, likes: 45 },
-          { id: '2', name: 'Modern City Wedding', description: 'Sleek downtown celebration', wedding_date: '2024-08-20', style: 'Modern', guest_count: 80, likes: 32 },
-          { id: '3', name: 'Beach Sunset Ceremony', description: 'Intimate beachside wedding', wedding_date: '2024-07-10', style: 'Beach', guest_count: 60, likes: 67 },
-          { id: '4', name: 'Rustic Barn Wedding', description: 'Charming countryside celebration', wedding_date: '2024-09-05', style: 'Rustic', guest_count: 150, likes: 28 },
-          { id: '5', name: 'Classic Elegance', description: 'Timeless traditional wedding', wedding_date: '2024-05-25', style: 'Classic', guest_count: 100, likes: 38 },
-          { id: '6', name: 'Bohemian Dream', description: 'Free-spirited artistic celebration', wedding_date: '2024-10-12', style: 'Bohemian', guest_count: 75, likes: 52 },
-          { id: '7', name: 'Vintage Romance', description: 'Nostalgic retro-themed wedding', wedding_date: '2024-04-18', style: 'Vintage', guest_count: 90, likes: 41 },
-          { id: '8', name: 'Garden Party Wedding', description: 'Whimsical outdoor garden party', wedding_date: '2024-11-08', style: 'Garden', guest_count: 110, likes: 35 },
-        ]
-        
-        setProjects(reset ? demoProjects : [...projects, ...demoProjects])
-        setHasMore(false)
-        return
-      }
-      
-      if (reset) {
-        setProjects(data || [])
-      } else {
-        setProjects(prev => [...prev, ...(data || [])])
-      }
-      
-      setHasMore((count || 0) > currentPage * projectsPerPage)
-      if (!reset) setPage(currentPage + 1)
+      setProjects(reset ? filteredProjects : [...projects, ...filteredProjects])
+      setHasMore(false)
     } catch (error) {
-      console.warn('Database connection failed, using demo data')
+      console.warn('Error loading projects')
       setProjects([])
       setHasMore(false)
     } finally {
@@ -105,8 +78,8 @@ export default function CommunityPage() {
 
         <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-4 mb-6">
           <ProjectFilters
-            filters={filters}
-            styles={styles}
+            filters={FILTER_OPTIONS}
+            styles={WEDDING_STYLES}
             selectedFilter={selectedFilter}
             selectedStyle={selectedStyle}
             onFilterChange={setSelectedFilter}
@@ -114,7 +87,7 @@ export default function CommunityPage() {
           />
         </div>
 
-        {loading && page === 1 ? (
+        {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(12)].map((_, i) => (
               <div key={i} className="animate-pulse">
@@ -129,7 +102,7 @@ export default function CommunityPage() {
         ) : projects.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {projects.map((project) => (
+              {projects.map((project: Project) => (
                 <ProjectCard
                   key={project.id}
                   id={project.id}

@@ -15,16 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form'
 import { useCompleteOnboardingNavigation } from '@/hooks/useOnboardingNavigation'
 import { cn } from "@/lib/utils"
-
-const CURRENCY_CONFIG = {
-  USD: { min: 5000, max: 165000, step: 1000, default: 33000, symbol: '$' },
-  PHP: { min: 300000, max: 8000000, step: 50000, default: 1500000, symbol: '₱' },
-  EUR: { min: 5000, max: 150000, step: 1000, default: 30000, symbol: '€' },
-  GBP: { min: 4500, max: 135000, step: 1000, default: 27000, symbol: '£' },
-  CAD: { min: 7000, max: 220000, step: 1000, default: 42000, symbol: 'C$' },
-  AUD: { min: 8000, max: 240000, step: 1000, default: 45000, symbol: 'A$' },
-  NZD: { min: 8500, max: 250000, step: 1000, default: 48000, symbol: 'NZ$' }
-}
+import { CURRENCY_CONFIG } from '@/lib/constants'
 
 const FormSchema = z.object({
   weddingDate: z.date().optional(),

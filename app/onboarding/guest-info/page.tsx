@@ -6,24 +6,7 @@ import { OnboardingButton } from '@/components/ui/onboarding-button'
 import { Slider } from '@/components/ui/slider'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useCompleteOnboardingNavigation } from '@/hooks/useOnboardingNavigation'
-
-const INTERNATIONAL_OPTIONS = [
-  {
-    value: 'many',
-    title: 'Yes, many international guests',
-    icon: 'calendar'
-  },
-  {
-    value: 'few',
-    title: 'A few international guests',
-    icon: 'users'
-  },
-  {
-    value: 'none',
-    title: 'No, all local',
-    icon: 'home'
-  }
-]
+import { INTERNATIONAL_GUEST_OPTIONS } from '@/lib/constants'
 
 export default function GuestInfoPage() {
   const [guestCountValue, setGuestCountValue] = useState([50])
@@ -103,7 +86,7 @@ export default function GuestInfoPage() {
           Will some of your guests travel from abroad?
         </label>
         <div className="space-y-3">
-          {INTERNATIONAL_OPTIONS.map((option) => (
+          {INTERNATIONAL_GUEST_OPTIONS.map((option) => (
             <OnboardingButton
               key={option.value}
               title={option.title}
