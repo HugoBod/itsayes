@@ -76,6 +76,9 @@ export const Hero = memo(function Hero() {
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 16.66vw"
+                      priority={num <= 4}
+                      loading={num <= 4 ? 'eager' : 'lazy'}
+                      quality={75}
                     />
                   </div>
                 ))}

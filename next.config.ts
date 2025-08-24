@@ -1,34 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Performance optimizations
-  experimental: {
-    optimizePackageImports: [
-      'lucide-react',
-      '@radix-ui/react-slot',
-      '@radix-ui/react-progress',
-      '@radix-ui/react-checkbox',
-      '@radix-ui/react-label',
-      '@radix-ui/react-popover',
-      '@radix-ui/react-slider'
-    ],
+  // Performance optimizations for faster development
+  images: {
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
+    formats: ['image/webp', 'image/avif'],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  
-  // Turbopack configuration (updated format)
-  turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
+  // Faster compilation
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
-  
-  // Reduce bundle size
+  // Reduce compilation time
   modularizeImports: {
     'lucide-react': {
-      transform: 'lucide-react/dist/esm/icons/{{ kebabCase member }}',
-      preventFullImport: true,
+      transform: 'lucide-react/dist/esm/icons/{{member}}',
     },
   },
 };

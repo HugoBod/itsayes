@@ -1,15 +1,14 @@
+
 # 🤖 CLAUDE DEVELOPMENT GUIDE - It's a Yes
 
 > **IMPORTANT**: Lis TOUJOURS ce fichier avant de commencer toute modification !
 
-> **🚨 CRITIQUE :** Lis également `CLAUDE_AI_PROTECTION.md` pour éviter les erreurs critiques !
-
 ## 🏗️ **ARCHITECTURE DU PROJET**
 
-### **Stack Technique VALIDÉE ET STABLE**
-- **Next.js 15.5.0** avec App Router
+### **Stack Technique**
+- **Next.js 15** avec App Router
 - **TypeScript** en mode strict  
-- **Tailwind CSS v3.4.17** ⚠️ **JAMAIS upgrader vers v4 (instable)**
+- **Tailwind CSS v4** (configuration moderne)
 - **Shadcn/ui** Composant UI
 - **Supabase** pour la base de données
 - **React 19** avec Server Components
