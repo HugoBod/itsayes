@@ -41,15 +41,16 @@ export default function WeddingStageSelectionPage() {
   const [venueLocation, setVenueLocation] = useState('')
 
   const { handleBack, handleNext, isNavigating } = useCompleteOnboardingNavigation(
-    '/onboarding',
-    '/onboarding/couple-details',
-    () => !!selectedStage && venueLocation.trim().length > 0,
-    () => {
+    2,  // step number
+    '/onboarding',  // prevPath (back button)
+    '/onboarding/couple-details',  // nextPath (continue button)
+    () => !!selectedStage && venueLocation.trim().length > 0,  // validateData
+    () => {  // getStepData
       const stageData = {
         stage: selectedStage,
         weddingLocation: venueLocation
       }
-      localStorage.setItem('wedding_stage', JSON.stringify(stageData))
+      return stageData
     }
   )
 

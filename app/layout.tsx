@@ -1,4 +1,5 @@
 import "./globals.css";
+import { AuthProvider } from '@/components/auth/auth-provider'
 
 export const metadata = {
   title: "It's a Yes - Professional Wedding Planning Platform",
@@ -17,7 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

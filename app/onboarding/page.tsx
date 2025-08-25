@@ -10,13 +10,15 @@ export default function OnboardingPage() {
   const [selectedType, setSelectedType] = useState<'couples' | 'planners' | null>(null)
 
   const { handleBack, handleNext, isNavigating } = useCompleteOnboardingNavigation(
-    '/',
-    selectedType === 'couples' ? '/onboarding/stage' : '/onboarding/planners',
-    () => !!selectedType,
-    () => {
+    1,  // step number
+    '/',  // prevPath (back to landing)
+    selectedType === 'couples' ? '/onboarding/stage' : '/onboarding/planners',  // nextPath
+    () => !!selectedType,  // validateData
+    () => {  // getStepData
       if (selectedType) {
-        localStorage.setItem('user_type', selectedType)
+        return { user_type: selectedType }
       }
+      return {}
     }
   )
 

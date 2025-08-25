@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { OnboardingLayout } from '@/components/layout/OnboardingLayout'
 import { Icon } from '@/components/ui/icons'
 import { Checkbox } from '@/components/ui/checkbox'
-import { useCompleteOnboardingNavigation } from '@/hooks/useOnboardingNavigation'
+import { useCompleteOnboardingNavigation, useOnboardingStepData } from '@/hooks/useOnboardingNavigation'
 
 const THEME_OPTIONS = [
   { value: 'classic', label: 'Classic', icon: 'award' },
@@ -33,21 +33,37 @@ export default function WeddingStylePage() {
   const [inspiration, setInspiration] = useState('')
   const [otherTheme, setOtherTheme] = useState('')
 
+  // Load existing step data
+  const { data: stepData, loadStepData } = useOnboardingStepData(4)
+
+  useEffect(() => {
+    loadStepData()
+  }, [loadStepData])
+
+  useEffect(() => {
+    if (stepData) {
+      setSelectedThemes(stepData.themes || [])
+      setOtherTheme(stepData.otherTheme || '')
+      setSelectedColorPalette(stepData.selectedColorPalette || '')
+      setColorPalette(stepData.colorPalette || '')
+      setInspiration(stepData.inspiration || '')
+    }
+  }, [stepData])
+
   const canProceed = selectedThemes.length > 0
 
-  const { handleBack, handleNext, isNavigating } = useCompleteOnboardingNavigation(
+  const { handleBack, handleNext, isNavigating, error } = useCompleteOnboardingNavigation(
+    4, // Step number for wedding style
     '/onboarding/guest-info',
     '/onboarding/budget-guests',
     () => canProceed,
-    () => {
-      localStorage.setItem('wedding_style', JSON.stringify({
-        themes: selectedThemes,
-        otherTheme,
-        selectedColorPalette,
-        colorPalette,
-        inspiration
-      }))
-    }
+    () => ({
+      themes: selectedThemes,
+      otherTheme,
+      selectedColorPalette,
+      colorPalette,
+      inspiration
+    })
   )
 
   const handleThemeChange = (theme: string, checked: boolean) => {
@@ -72,6 +88,15 @@ export default function WeddingStylePage() {
       isNavigating={isNavigating}
       loadingText="Curating your style..."
     >
+      {/* Error Message */}
+      {error && (
+        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-4 mb-6">
+          <div className="flex items-center">
+            <div className="text-sm text-destructive">{error}</div>
+          </div>
+        </div>
+      )}
+
       {/* Theme Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">

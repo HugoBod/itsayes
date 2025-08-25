@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { OnboardingLayout } from '@/components/layout/OnboardingLayout'
 import { OnboardingButton } from '@/components/ui/onboarding-button'
 import { Slider } from '@/components/ui/slider'
 import { Checkbox } from '@/components/ui/checkbox'
-import { useCompleteOnboardingNavigation } from '@/hooks/useOnboardingNavigation'
+import { useCompleteOnboardingNavigation, useOnboardingStepData } from '@/hooks/useOnboardingNavigation'
 import { INTERNATIONAL_GUEST_OPTIONS } from '@/lib/constants'
 
 export default function GuestInfoPage() {
@@ -17,19 +17,37 @@ export default function GuestInfoPage() {
     otherNotes: ''
   })
 
+  // Load existing step data
+  const { data: stepData, loadStepData } = useOnboardingStepData(3)
+
+  useEffect(() => {
+    loadStepData()
+  }, [loadStepData])
+
+  useEffect(() => {
+    if (stepData) {
+      setGuestCountValue([stepData.guestCount || 50])
+      setInternationalGuests(stepData.internationalGuests || '')
+      setSpecialRequirements(stepData.specialRequirements || {
+        allergies: false,
+        accessibility: false,
+        otherNotes: ''
+      })
+    }
+  }, [stepData])
+
   const canProceed = guestCountValue[0] && internationalGuests
 
-  const { handleBack, handleNext, isNavigating } = useCompleteOnboardingNavigation(
+  const { handleBack, handleNext, isNavigating, error } = useCompleteOnboardingNavigation(
+    3, // Step number for guest info
     '/onboarding/couple-details',
     '/onboarding/style',
     () => canProceed,
-    () => {
-      localStorage.setItem('guest_info', JSON.stringify({
-        guestCount: guestCountValue[0],
-        internationalGuests,
-        specialRequirements
-      }))
-    }
+    () => ({
+      guestCount: guestCountValue[0],
+      internationalGuests,
+      specialRequirements
+    })
   )
 
   const handleSpecialRequirementChange = (key: string, value: boolean | string) => {
@@ -53,6 +71,15 @@ export default function GuestInfoPage() {
       isNavigating={isNavigating}
       loadingText="Organizing your guest details..."
     >
+      {/* Error Message */}
+      {error && (
+        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-4 mb-6">
+          <div className="flex items-center">
+            <div className="text-sm text-destructive">{error}</div>
+          </div>
+        </div>
+      )}
+
       {/* Guest Count Slider */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">

@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { OnboardingLayout } from '@/components/layout/OnboardingLayout'
 import { Icon } from '@/components/ui/icons'
 import { useSimpleOnboardingNavigation } from '@/hooks/useOnboardingNavigation'
+import { onboardingService } from '@/lib/onboarding'
+import { supabase } from '@/lib/supabase-client'
 
 interface OnboardingData {
   weddingStage?: {
@@ -59,27 +61,70 @@ export default function SummaryPage() {
   const handleComplete = async () => {
     setIsSubmitting(true)
     try {
+      // Save final onboarding data to localStorage (for now)
       localStorage.setItem('complete_onboarding_data', JSON.stringify({
         type: 'couples',
         responses: onboardingData,
         completedAt: new Date().toISOString()
       }))
       
-      router.push('/')
+      // Mark onboarding as completed in Supabase
+      console.log('🎯 Calling completeOnboarding()...')
+      const result = await onboardingService.completeOnboarding()
+      console.log('🎯 completeOnboarding() result:', result)
+      
+      if (!result.success) {
+        console.error('❌ Failed to complete onboarding:', result.error)
+        // Still redirect to dashboard even if completion fails
+      } else {
+        console.log('✅ Onboarding marked as completed successfully!')
+      }
+      
+      // Use window.location instead of router.push to force server re-evaluation
+      window.location.href = '/dashboard'
     } catch (error) {
       console.error('Error completing onboarding:', error)
+      // Still redirect to dashboard on error
+      window.location.href = '/dashboard'
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const { handleBack, handleNext } = useSimpleOnboardingNavigation(
+    6, // step number
     '/onboarding/budget-guests',
-    '/'
+    '/dashboard'
   )
 
   const handleCompleteWithRedirect = () => {
     handleComplete()
+  }
+
+  // DEBUG: Direct database check
+  const debugDatabaseState = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('🔍 DEBUG: Current user:', user?.email, user?.id)
+      
+      if (user) {
+        const { data: workspace, error } = await supabase
+          .from('workspaces')
+          .select(`
+            id,
+            name,
+            onboarding_completed_at,
+            workspace_members!inner(user_id, role)
+          `)
+          .eq('workspace_members.user_id', user.id)
+          .single()
+        
+        console.log('🔍 DEBUG: Workspace query result:', { workspace, error })
+        console.log('🔍 DEBUG: onboarding_completed_at:', workspace?.onboarding_completed_at)
+      }
+    } catch (error) {
+      console.error('🔍 DEBUG: Error:', error)
+    }
   }
 
   if (isSubmitting) {
@@ -169,6 +214,16 @@ export default function SummaryPage() {
             </div>
           </div>
         )}
+      </div>
+      
+      {/* DEBUG: Temporary debug button */}
+      <div className="mt-4 text-center">
+        <button
+          onClick={debugDatabaseState}
+          className="px-4 py-2 bg-gray-100 text-gray-600 rounded text-sm hover:bg-gray-200"
+        >
+          🔍 Debug Database State
+        </button>
       </div>
     </OnboardingLayout>
   )

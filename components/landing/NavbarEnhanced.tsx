@@ -1,12 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
+import { useAuthStatus } from '@/hooks/useAuthStatus'
+import { onboardingService } from '@/lib/onboarding'
 
 export function NavbarEnhanced() {
   const [isScrolled, setIsScrolled] = useState(false)
+  const { isAuthenticated, userEmail } = useAuthStatus()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,24 +87,93 @@ export function NavbarEnhanced() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-[14px] text-foreground hover:text-foreground bg-neutral-100 hover:bg-neutral-200 border-neutral-200 font-medium"
-              asChild
-            >
-              <Link href="/auth?mode=signin">Log in</Link>
-            </Button>
-            <Button 
-              size="sm" 
-              className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white border-0 shadow-md hover:shadow-lg transition-all text-[14px] font-medium px-4"
-              asChild
-            >
-              <Link href="/auth?mode=signup">Try for free</Link>
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Welcome back!</span>
+                </div>
+                <DashboardButton />
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="text-[14px] font-medium"
+                  asChild
+                >
+                  <Link href="/auth/logout">Sign out</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-[14px] text-foreground hover:text-foreground bg-neutral-100 hover:bg-neutral-200 border-neutral-200 font-medium"
+                  asChild
+                >
+                  <Link href="/auth/signin">Log in</Link>
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white border-0 shadow-md hover:shadow-lg transition-all text-[14px] font-medium px-4"
+                  asChild
+                >
+                  <Link href="/auth/signup">Try for free</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
     </nav>
+  )
+}
+
+// Smart Dashboard Button - implements Phase 3 onboarding completion logic
+function DashboardButton() {
+  const router = useRouter()
+  const [isChecking, setIsChecking] = useState(false)
+
+  const handleDashboardClick = async () => {
+    setIsChecking(true)
+    try {
+      // Check if onboarding is completed according to Phase 3 architecture
+      console.log('🔍 Checking onboarding completion status...')
+      const { completed, error } = await onboardingService.isOnboardingComplete()
+      console.log('🔍 isOnboardingComplete() result:', { completed, error })
+      
+      if (error) {
+        console.error('❌ Error checking onboarding status:', error)
+        // On error, default to onboarding
+        router.push('/onboarding')
+        return
+      }
+
+      // Smart routing according to architecture
+      if (completed) {
+        console.log('✅ Onboarding completed, redirecting to dashboard')
+        router.push('/dashboard')
+      } else {
+        console.log('⏳ Onboarding not completed, redirecting to onboarding')
+        router.push('/onboarding')
+      }
+    } catch (error) {
+      console.error('Error in dashboard click:', error)
+      // Fallback to onboarding on error
+      router.push('/onboarding')
+    } finally {
+      setIsChecking(false)
+    }
+  }
+
+  return (
+    <Button 
+      variant="outline" 
+      size="sm" 
+      className="text-[14px] text-foreground hover:text-foreground bg-neutral-100 hover:bg-neutral-200 border-neutral-200 font-medium"
+      onClick={handleDashboardClick}
+      disabled={isChecking}
+    >
+      {isChecking ? 'Checking...' : 'Dashboard'}
+    </Button>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Slider } from '@/components/ui/slider'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form'
-import { useCompleteOnboardingNavigation } from '@/hooks/useOnboardingNavigation'
+import { useCompleteOnboardingNavigation, useOnboardingStepData } from '@/hooks/useOnboardingNavigation'
 import { cn } from "@/lib/utils"
 import { CURRENCY_CONFIG } from '@/lib/constants'
 
@@ -32,24 +32,46 @@ export default function CoupleDetailsPage() {
     resolver: zodResolver(FormSchema),
   })
 
+  // Load existing step data
+  const { data: stepData, loadStepData } = useOnboardingStepData(2)
+
+  useEffect(() => {
+    loadStepData()
+  }, [loadStepData])
+
+  useEffect(() => {
+    if (stepData) {
+      setPartner1Name(stepData.partner1Name || '')
+      setPartner2Name(stepData.partner2Name || '')
+      setCurrency(stepData.currency || 'USD')
+      setBudgetValue([stepData.budgetValue || CURRENCY_CONFIG.USD.default])
+      setStillDeciding(stepData.stillDeciding || false)
+      
+      if (stepData.weddingDate) {
+        form.setValue('weddingDate', new Date(stepData.weddingDate))
+      }
+    }
+  }, [stepData, form])
+
   const currentConfig = CURRENCY_CONFIG[currency]
 
   const canProceed = partner1Name.trim() && partner2Name.trim() && (form.getValues('weddingDate') || stillDeciding) && budgetValue[0]
 
-  const { handleBack, handleNext, isNavigating } = useCompleteOnboardingNavigation(
+  const { handleBack, handleNext, isNavigating, isSaving, error } = useCompleteOnboardingNavigation(
+    2, // Step number for couple details
     '/onboarding/stage',
     '/onboarding/guest-info',
     () => canProceed,
     () => {
       const weddingDate = form.getValues('weddingDate')
-      localStorage.setItem('couple_details', JSON.stringify({
+      return {
         partner1Name,
         partner2Name,
         weddingDate: stillDeciding ? null : weddingDate?.toISOString(),
         stillDeciding,
         budgetValue: budgetValue[0],
         currency
-      }))
+      }
     }
   )
 
@@ -84,6 +106,15 @@ export default function CoupleDetailsPage() {
       isNavigating={isNavigating}
       loadingText="Preparing your journey..."
     >
+      {/* Error Message */}
+      {error && (
+        <div className="rounded-md bg-destructive/10 border border-destructive/20 p-4 mb-6">
+          <div className="flex items-center">
+            <div className="text-sm text-destructive">{error}</div>
+          </div>
+        </div>
+      )}
+
       {/* Couple Names Section */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-left">

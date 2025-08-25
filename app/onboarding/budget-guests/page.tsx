@@ -40,20 +40,19 @@ export default function BudgetGuestsPage() {
 
   const canProceed = ceremonyType
 
-  const { handleBack, handleNext, isNavigating } = useCompleteOnboardingNavigation(
+  const { handleBack, handleNext, isNavigating, error } = useCompleteOnboardingNavigation(
+    5, // Step number for experiences/extras
     '/onboarding/style',
     '/onboarding/summary',
     () => canProceed,
-    () => {
-      localStorage.setItem('experiences_extras', JSON.stringify({
-        ceremonyType,
-        religiousType: ceremonyType === 'religious' ? religiousType : '',
-        otherReligious: religiousType === 'Other' ? otherReligious : '',
-        experiences: selectedExperiences,
-        otherExperience,
-        specialWishes
-      }))
-    }
+    () => ({
+      ceremonyType,
+      religiousType: ceremonyType === 'religious' ? religiousType : '',
+      otherReligious: religiousType === 'Other' ? otherReligious : '',
+      experiences: selectedExperiences,
+      otherExperience,
+      specialWishes
+    })
   )
 
   const handleExperienceChange = (experience: string, checked: boolean) => {
