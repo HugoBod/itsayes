@@ -9,7 +9,9 @@
     "build:clean": "rm -rf .next && next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "cache:clear": "rm -rf .next"
+    "cache:clear": "rm -rf .next",
+    "optimize:images": "node scripts/optimize-images.js",
+    "clean:deps": "pnpm prune && pnpm store prune"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
