@@ -1,5 +1,9 @@
 import OpenAI from 'openai'
 import { storageService } from './storage-service'
+import { createClient } from '@supabase/supabase-js'
+import { Database } from './types/database'
+
+type SupabaseClient = ReturnType<typeof createClient<Database>>
 
 interface OnboardingData {
   step_1?: {
@@ -441,7 +445,8 @@ Format your response as JSON:
    */
   async generateMoodboard(
     rawOnboardingData: any, 
-    workspaceId?: string
+    workspaceId?: string,
+    supabase?: SupabaseClient
   ): Promise<MoodboardGenerationResult> {
     try {
       // Normalize the data structure first
@@ -512,9 +517,10 @@ Format your response as JSON:
       let storedImageUrl: string | undefined
       let storedImagePath: string | undefined
       
-      if (workspaceId && imageUrl.startsWith('https://')) {
+      if (workspaceId && imageUrl.startsWith('https://') && supabase) {
         try {
           const storageResult = await storageService.saveMoodboardImage(
+            supabase,
             imageUrl, 
             workspaceId, 
             { type: 'main' }

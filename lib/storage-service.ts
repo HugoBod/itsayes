@@ -1,4 +1,7 @@
-import { supabase } from './supabase-client'
+import { createClient } from '@supabase/supabase-js'
+import { Database } from './types/database'
+
+type SupabaseClient = ReturnType<typeof createClient<Database>>
 
 interface ImageUploadResult {
   success: boolean
@@ -41,6 +44,7 @@ class StorageService {
    * Uploads an image blob to Supabase Storage
    */
   private async uploadImageBlob(
+    supabase: SupabaseClient,
     blob: Blob, 
     fileName: string, 
     workspaceId: string
@@ -82,6 +86,7 @@ class StorageService {
    * Saves a DALL-E generated image to Supabase Storage
    */
   async saveMoodboardImage(
+    supabase: SupabaseClient,
     imageUrl: string, 
     workspaceId: string, 
     metadata?: { 
@@ -107,6 +112,7 @@ class StorageService {
 
       // Upload to storage
       const uploadResult = await this.uploadImageBlob(
+        supabase,
         downloadResult.blob, 
         fileName, 
         workspaceId
@@ -125,7 +131,7 @@ class StorageService {
   /**
    * Lists all moodboard images for a workspace
    */
-  async listMoodboardImages(workspaceId: string): Promise<{
+  async listMoodboardImages(supabase: SupabaseClient, workspaceId: string): Promise<{
     success: boolean
     images?: Array<{
       name: string
@@ -168,7 +174,7 @@ class StorageService {
   /**
    * Deletes a moodboard image from storage
    */
-  async deleteMoodboardImage(workspaceId: string, fileName: string): Promise<{
+  async deleteMoodboardImage(supabase: SupabaseClient, workspaceId: string, fileName: string): Promise<{
     success: boolean
     error?: string
   }> {
@@ -196,7 +202,7 @@ class StorageService {
   /**
    * Ensures the moodboard bucket exists and has correct policies
    */
-  async ensureBucketSetup(): Promise<{ success: boolean; error?: string }> {
+  async ensureBucketSetup(supabase: SupabaseClient): Promise<{ success: boolean; error?: string }> {
     try {
       // Check if bucket exists
       const { data: buckets, error: listError } = await supabase.storage.listBuckets()

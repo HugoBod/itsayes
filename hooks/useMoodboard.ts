@@ -84,6 +84,9 @@ export function useMoodboard(): UseMoodboardReturn {
         return false
       }
 
+      console.log('Session exists:', !!session)
+      console.log('Access token exists:', !!session.access_token)
+
       const response = await fetch('/api/moodboard/generate', {
         method: 'POST',
         headers: {
