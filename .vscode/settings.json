@@ -1,0 +1,20 @@
+{
+  "files.exclude": {
+    "node_modules": true,
+    ".next": true,
+    ".git": false,
+    "**/*.log": true,
+    "**/pnpm-lock.yaml": false
+  },
+  "search.exclude": {
+    "node_modules": true,
+    ".next": true,
+    "pnpm-lock.yaml": true,
+    "**/*.log": true
+  },
+  "files.watcherExclude": {
+    "node_modules/**": true,
+    ".next/**": true,
+    "**/*.log": true
+  }
+}

@@ -42,21 +42,67 @@ export default function SummaryPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Load all onboarding data from localStorage
-    const weddingStage = localStorage.getItem('wedding_stage')
-    const coupleDetails = localStorage.getItem('couple_details')
-    const guestInfo = localStorage.getItem('guest_info')
-    const weddingStyle = localStorage.getItem('wedding_style')
-    const experiencesExtras = localStorage.getItem('experiences_extras')
-
-    setOnboardingData({
-      weddingStage: weddingStage ? JSON.parse(weddingStage) : undefined,
-      coupleDetails: coupleDetails ? JSON.parse(coupleDetails) : undefined,
-      guestInfo: guestInfo ? JSON.parse(guestInfo) : undefined,
-      weddingStyle: weddingStyle ? JSON.parse(weddingStyle) : undefined,
-      experiencesExtras: experiencesExtras ? JSON.parse(experiencesExtras) : undefined,
-    })
+    // Load all onboarding data from Supabase
+    loadOnboardingData()
   }, [])
+
+  const loadOnboardingData = async () => {
+    try {
+      const { data: allSteps, error } = await onboardingService.getAllSteps()
+      
+      if (error) {
+        console.error('Error loading onboarding data:', error)
+        return
+      }
+
+      // Transform the data to match the expected format
+      const transformedData: OnboardingData = {}
+
+      if (allSteps?.step_2) {
+        transformedData.weddingStage = {
+          stage: allSteps.step_2.planning_stage || '',
+          location: allSteps.step_2.wedding_location || ''
+        }
+      }
+
+      if (allSteps?.step_3) {
+        transformedData.coupleDetails = {
+          partner1Name: allSteps.step_3.partner1Name || '',
+          partner2Name: allSteps.step_3.partner2Name || '',
+          weddingDate: allSteps.step_3.weddingDate,
+          stillDeciding: allSteps.step_3.stillDeciding,
+          budgetValue: allSteps.step_3.budgetValue || 0,
+          currency: allSteps.step_3.currency || 'USD'
+        }
+      }
+
+      if (allSteps?.step_4) {
+        transformedData.guestInfo = {
+          guestCount: allSteps.step_4.guestCount || 0,
+          internationalGuests: allSteps.step_4.internationalGuests || '',
+          specialRequirements: allSteps.step_4.specialRequirements
+        }
+      }
+
+      if (allSteps?.step_5) {
+        transformedData.weddingStyle = {
+          themes: allSteps.step_5.themes ? [allSteps.step_5.themes] : [],
+          colorPalette: allSteps.step_5.colorPalette
+        }
+      }
+
+      if (allSteps?.step_6) {
+        transformedData.experiencesExtras = {
+          ceremonyType: allSteps.step_6.ceremonyType || '',
+          experiences: allSteps.step_6.experiences || []
+        }
+      }
+
+      setOnboardingData(transformedData)
+    } catch (error) {
+      console.error('Error loading onboarding data:', error)
+    }
+  }
 
   const handleComplete = async () => {
     setIsSubmitting(true)
@@ -81,11 +127,12 @@ export default function SummaryPage() {
       }
       
       // Use window.location instead of router.push to force server re-evaluation
-      window.location.href = '/dashboard'
+      // Redirect to moodboard generation first, then dashboard
+      window.location.href = '/dashboard/moodboard-reveal'
     } catch (error) {
       console.error('Error completing onboarding:', error)
-      // Still redirect to dashboard on error
-      window.location.href = '/dashboard'
+      // Still redirect to moodboard on error - they can navigate to dashboard from there
+      window.location.href = '/dashboard/moodboard-reveal'
     } finally {
       setIsSubmitting(false)
     }
@@ -94,7 +141,7 @@ export default function SummaryPage() {
   const { handleBack, handleNext } = useSimpleOnboardingNavigation(
     6, // step number
     '/onboarding/budget-guests',
-    '/dashboard'
+    '/dashboard/moodboard-reveal'
   )
 
   const handleCompleteWithRedirect = () => {

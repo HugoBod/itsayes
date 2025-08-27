@@ -14,11 +14,20 @@ const nextConfig: NextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Cache optimizations for development
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000, // 25 seconds
+    pagesBufferLength: 2,
+  },
   // Reduce compilation time
   modularizeImports: {
     'lucide-react': {
       transform: 'lucide-react/dist/esm/icons/{{member}}',
     },
+  },
+  // Disable experimental features that can cause cache issues
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
   },
 };
 

@@ -46,6 +46,11 @@ import {
   Edit,
   Trash,
   MessageCircle,
+  Eye,
+  Image,
+  Palette,
+  Lightbulb,
+  Share,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -106,6 +111,12 @@ export const iconRegistry = {
   messageCircle: MessageCircle,
   'x-circle': XCircle,
   xCircle: XCircle,
+  // Moodboard specific icons
+  eye: Eye,
+  image: Image,
+  palette: Palette,
+  lightbulb: Lightbulb,
+  share: Share,
 } as const
 
 export type IconName = keyof typeof iconRegistry
