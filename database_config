@@ -1,0 +1,207 @@
+# Project Context: ItsaYes - Wedding Planning SaaS Platform
+
+
+- **Local Dev**: Supabase CLI with Docker
+- **Staging**: Supabase cloud 
+- **PRod: Supabase cloud (another projetc)
+
+## Current Development Environment Setup
+
+I have successfully set up:
+- **Local**: Supabase running locally with Docker (http://127.0.0.1:54321)
+- **Staging**: Supabase project linked to Vercel preview
+- **Production**: Supabase project linked to Vercel production
+
+Current status:
+- Starting from scratch with no existing tables
+
+## Architecture: Smart Hybrid Multi-Tenant
+
+I've chosen a "Smart Hybrid" architecture that:
+- Creates ALL necessary tables for multi-workspace from the start
+- BUT limits to 1 workspace per account in v1 (temporary constraint)
+- Allows evolution to true multi-workspace by just removing one constraint
+
+## User Flow
+
+### B2C Onboarding (Couple)
+1. Landing page → Signup/Login
+2. Auto-creation of Account (type: 'personal')
+3. Auto-creation of single Workspace
+4. 7-step onboarding stored in workspace.onboarding_data_couple (JSONB)
+5. Dashboard with modules: Budget, Planning & Tasks
+
+### B2B Onboarding (Wedding Planner)
+1. Landing page → Signup/Login
+2. Create Account (type: 'team')
+4. 7-step onboarding stored in workspace.onboarding_data_planner (JSONB) TO BE STARTED (onboardning not in the MVP)
+3. Same v1 limitation: 1 workspace
+4. Future v2: can create N workspaces for N clients
+
+## Database Structure
+
+### Hierarchy
+ACCOUNTS (Company/Personal)
+└── WORKSPACES (Wedding projects) [1:1 in v1, 1:N in v2]
+└── BOARDS (Modules: Budget, Planning, Tasks etc.)
+└── ITEMS (Flexible content in JSONB)
+└── COMMENTS/ACTIVITY_LOGS
+
+### Main Tables
+
+1. **accounts**: Company level, manages billing and global limits
+2. **account_members**: Who belongs to which account
+3. **workspaces**: A wedding project (contains onboarding_data in JSONB)
+4. **workspace_members**: Permissions per workspace
+5. **boards**: The modules (budget, plannings, tasks)
+6. **items**: ALL content in flexible JSONB (expenses, guests, tasks)
+7. **views**: Different board views (table, kanban, calendar)
+8. **activity_logs**: History of all actions
+9. **comments**: Collaboration on items
+
+### Architecture Key Points
+
+**Maximum Flexibility**
+- The `items` table stores EVERYTHING in JSONB
+- No rigid schema = no migrations needed to add fields
+- Structure: `{type: 'expense', data: {name: 'Photographer', amount: 3000, ...}}`
+
+**v1 Constraint (to remove later)**
+```sql
+ALTER TABLE workspaces 
+ADD CONSTRAINT one_workspace_per_account_v1 UNIQUE (account_id);
+Onboarding in workspace
+jsonworkspace.onboarding_data = {
+  "step_1": {"user_type": "couple"},
+  "step_2": {"partner1": "Alice", "partner2": "Bob", "budget": 50000},
+  "step_3": {"guest_count": 150, "international": "few"},
+  // ... up to step_7
+}
+RLS Security
+Helper Functions
+
+user_has_account_access(account_id): Checks account membership
+user_has_workspace_access(workspace_id): Checks workspace access
+user_workspace_role(workspace_id): Returns role (owner/admin/editor/viewer)
+
+Policies Pattern
+sql-- Everything based on workspace access
+CREATE POLICY "View items" ON items
+  FOR SELECT USING (user_has_workspace_access(workspace_id));
+Important Triggers
+
+Auto-setup on signup: Creates account + workspace + default boards
+Activity logging: Automatic change tracking
+Updated_at: Automatic timestamp updates
+
+Post-Onboarding Data Migration
+When onboarding is completed, JSONB data becomes items:
+sql-- Budget from onboarding_data → items of type 'expense'
+-- Guest count → items of type 'guest'
+-- Tasks → items of type 'task'
+Evolution v1 → v2
+What does NOT change
+
+All tables remain identical
+No data migration needed
+RLS policies stay the same
+
+What changes (2 days of dev)
+
+Remove constraint one_workspace_per_account_v1
+Add WorkspaceSwitcher in UI
+Adapt dashboard for multi-workspace view
+That's it!
+
+Implementation Order
+Phase 1: Database Setup 
+
+Create & Apply all migrations in local Supabase
+Test table creation without triggers first
+Implement RLS on all tables
+Add safe triggers that don't block user creation
+Test with 2 users to verify isolation
+
+Phase 2: Authentication 
+
+Fix auth trigger issues 
+Build Auth UI (login/signup with Next.js)
+Test user creation flow
+Verify auto-creation of account/workspace
+
+Phase 3: Onboarding
+
+Save to workspace.onboarding_data at each step
+Handle resume/continue functionality
+Complete onboarding transition to dashboard
+
+Phase 4: Core Application
+
+Build basic Dashboard with navigation
+Implement 1 module (start with Budget)
+Migrate data from onboarding → items
+Add other modules progressively
+
+Local Development Workflow
+Current Setup Commands
+bash# Start local Supabase (already running)
+supabase start
+
+# Apply migrations
+supabase db reset  # Full reset with all migrations
+# OR
+supabase migration up  # Apply new migrations only
+
+# Access tools
+# Studio: http://127.0.0.1:54323
+# API: http://127.0.0.1:54321
+# Inbucket (emails): http://127.0.0.1:54324
+Testing Workflow
+
+Create test users via API (Auth UI has issues)
+Manually create associated data via SQL
+Test RLS policies with different users
+Verify data isolation
+
+Known Issues & Solutions
+
+Auth trigger blocking user creation: Use safe trigger with exception handling
+Auth UI not showing in Studio: Use API directly with curl
+Constraint violations: Ensure proper order of data creation
+
+Critical Attention Points
+
+NEVER disable RLS even temporarily
+Always test with multiple users to verify isolation
+UUIDs mandatory everywhere (no auto-increment)
+JSONB is temporary for onboarding, but permanent for items.data
+Indexes on foreign keys for performance
+Soft delete with is_archived instead of physical DELETE
+Handle trigger failures gracefully - don't block user creation
+
+Migration Files Structure
+supabase/
+  migrations/
+    
+Specific Questions & Help Needed
+I need your help to:
+
+Validate this architecture before coding further
+Code the files in migration
+Ensure RLS policies are correct and secure
+Optimize queries for performance
+Properly handle onboarding_data → items migration
+Implement real-time notification system
+Handle the auth trigger issue properly without blocking user creation
+Best practices for JSONB indexing and querying
+
+The goal is to have a solid, scalable foundation with no technical debt, that can evolve from 1 workspace (MVP) to N workspaces (Scale) without major refactoring.
+Current Immediate Issue to Solve
+The handle_new_user() trigger is causing "Database error saving new user" when creating users via Auth. I need a safe trigger that:
+
+Creates account/workspace/boards on user signup
+Doesn't block user creation if it fails
+Handles all edge cases gracefully
+
+
+This prompt contains all the information needed for Claude to guide you through the complete implementation of Solution C, including your local development context and current issues.
