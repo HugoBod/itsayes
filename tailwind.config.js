@@ -20,10 +20,12 @@ module.exports = {
           100: '#d9eee3',
           500: '#2F5545',
           600: '#1F3630',
+          foreground: '#ffffff',
         },
         secondary: {
           DEFAULT: '#9E7A68',
           dark: '#7A5D4F',
+          foreground: '#ffffff',
         },
         background: '#F5EFE6',
         foreground: '#1A1A1A',
@@ -34,7 +36,10 @@ module.exports = {
         border: '#E5E7EB',
         warm: '#9E7A68',
         success: '#10b981',
-        destructive: '#ef4444',
+        destructive: {
+          DEFAULT: '#ef4444',
+          foreground: '#ffffff',
+        },
       },
       backgroundImage: {
         'gradient-warm': 'linear-gradient(135deg, #F5EFE6 0%, #E8DDD4 100%)',

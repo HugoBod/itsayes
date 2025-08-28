@@ -10,7 +10,9 @@ export const Hero = memo(function Hero() {
   const router = useRouter()
   
   const handleGetStarted = useCallback(() => {
-    router.push('/onboarding')
+    // For unauthenticated users on landing page, go directly to signup
+    // If user is already authenticated, they would be redirected by middleware
+    router.push('/auth/signup')
   }, [router])
 
   const handleScrollToCommunity = useCallback(() => {

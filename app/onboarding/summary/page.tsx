@@ -1,277 +1,214 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { OnboardingLayout } from '@/components/layout/OnboardingLayout'
+import { MoodboardGrid } from '@/components/moodboard/MoodboardGrid'
+import { MoodboardGeneratingState } from '@/components/moodboard/MoodboardGeneratingState'
+import { OnboardingDataSummary } from '@/components/onboarding/OnboardingDataSummary'
 import { Icon } from '@/components/ui/icons'
-import { useSimpleOnboardingNavigation } from '@/hooks/useOnboardingNavigation'
-import { onboardingService } from '@/lib/onboarding'
-import { supabase } from '@/lib/supabase-client'
-
-interface OnboardingData {
-  weddingStage?: {
-    stage: string
-    location: string
-  }
-  coupleDetails?: {
-    partner1Name: string
-    partner2Name: string
-    weddingDate?: string
-    stillDeciding?: boolean
-    budgetValue: number
-    currency: string
-  }
-  guestInfo?: {
-    guestCount: number
-    internationalGuests: string
-    specialRequirements?: object
-  }
-  weddingStyle?: {
-    themes?: string[]
-    colorPalette?: string
-  }
-  experiencesExtras?: {
-    ceremonyType: string
-    experiences?: string[]
-  }
-}
+import { useOnboardingMoodboard } from '@/hooks/useOnboardingMoodboard'
 
 export default function SummaryPage() {
-  const [onboardingData, setOnboardingData] = useState<OnboardingData>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [generatingMessage, setGeneratingMessage] = useState("✨ Analyzing your style preferences")
+  
+  const { 
+    onboardingData,
+    isLoadingOnboarding,
+    onboardingError,
+    moodboard,
+    isGeneratingMoodboard,
+    moodboardError,
+    hasGenerated,
+    isReady,
+    canProceed,
+    generateMoodboard,
+    completeOnboardingWithMigration
+  } = useOnboardingMoodboard()
 
+  // Auto-generate moodboard when onboarding data is ready
   useEffect(() => {
-    // Load all onboarding data from Supabase
-    loadOnboardingData()
-  }, [])
-
-  const loadOnboardingData = async () => {
-    try {
-      const { data: allSteps, error } = await onboardingService.getAllSteps()
-      
-      if (error) {
-        console.error('Error loading onboarding data:', error)
-        return
-      }
-
-      // Transform the data to match the expected format
-      const transformedData: OnboardingData = {}
-
-      if (allSteps?.step_2) {
-        transformedData.weddingStage = {
-          stage: allSteps.step_2.planning_stage || '',
-          location: allSteps.step_2.wedding_location || ''
-        }
-      }
-
-      if (allSteps?.step_3) {
-        transformedData.coupleDetails = {
-          partner1Name: allSteps.step_3.partner1Name || '',
-          partner2Name: allSteps.step_3.partner2Name || '',
-          weddingDate: allSteps.step_3.weddingDate,
-          stillDeciding: allSteps.step_3.stillDeciding,
-          budgetValue: allSteps.step_3.budgetValue || 0,
-          currency: allSteps.step_3.currency || 'USD'
-        }
-      }
-
-      if (allSteps?.step_4) {
-        transformedData.guestInfo = {
-          guestCount: allSteps.step_4.guestCount || 0,
-          internationalGuests: allSteps.step_4.internationalGuests || '',
-          specialRequirements: allSteps.step_4.specialRequirements
-        }
-      }
-
-      if (allSteps?.step_5) {
-        transformedData.weddingStyle = {
-          themes: allSteps.step_5.themes ? [allSteps.step_5.themes] : [],
-          colorPalette: allSteps.step_5.colorPalette
-        }
-      }
-
-      if (allSteps?.step_6) {
-        transformedData.experiencesExtras = {
-          ceremonyType: allSteps.step_6.ceremonyType || '',
-          experiences: allSteps.step_6.experiences || []
-        }
-      }
-
-      setOnboardingData(transformedData)
-    } catch (error) {
-      console.error('Error loading onboarding data:', error)
+    if (isReady && !moodboard && !isGeneratingMoodboard && !hasGenerated && !moodboardError) {
+      console.log('🎨 Auto-generating moodboard...')
+      generateMoodboard()
     }
-  }
+  }, [isReady, moodboard, isGeneratingMoodboard, hasGenerated, moodboardError, generateMoodboard])
 
-  const handleComplete = async () => {
+  // Progress loading messages during generation
+  useEffect(() => {
+    if (!isGeneratingMoodboard) return
+
+    const messages = [
+      "✨ Analyzing your style preferences",
+      "🎨 Crafting your color palette", 
+      "💝 Incorporating your special wishes",
+      "🏰 Designing your perfect venue vibe",
+      "✨ Adding final magical touches"
+    ]
+
+    let currentIndex = 0
+    const interval = setInterval(() => {
+      currentIndex = (currentIndex + 1) % messages.length
+      setGeneratingMessage(messages[currentIndex])
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [isGeneratingMoodboard])
+
+  // Handle completion with migration
+  const handleCompleteWithMigration = useCallback(async () => {
     setIsSubmitting(true)
     try {
-      // Save final onboarding data to localStorage (for now)
-      localStorage.setItem('complete_onboarding_data', JSON.stringify({
-        type: 'couples',
-        responses: onboardingData,
-        completedAt: new Date().toISOString()
-      }))
+      console.log('🎯 Starting onboarding completion...')
       
-      // Mark onboarding as completed in Supabase
-      console.log('🎯 Calling completeOnboarding()...')
-      const result = await onboardingService.completeOnboarding()
-      console.log('🎯 completeOnboarding() result:', result)
+      const result = await completeOnboardingWithMigration()
       
       if (!result.success) {
-        console.error('❌ Failed to complete onboarding:', result.error)
-        // Still redirect to dashboard even if completion fails
+        console.error('❌ Onboarding completion failed:', result.error)
+        // Still redirect to dashboard - user can see error there
       } else {
-        console.log('✅ Onboarding marked as completed successfully!')
+        console.log('✅ Onboarding completed successfully!')
       }
       
-      // Use window.location instead of router.push to force server re-evaluation
-      // Redirect to moodboard generation first, then dashboard
-      window.location.href = '/dashboard/moodboard-reveal'
+      // Redirect to main dashboard (not moodboard-reveal)
+      router.push('/dashboard')
     } catch (error) {
       console.error('Error completing onboarding:', error)
-      // Still redirect to moodboard on error - they can navigate to dashboard from there
-      window.location.href = '/dashboard/moodboard-reveal'
+      // Still redirect - better than being stuck
+      router.push('/dashboard')
     } finally {
       setIsSubmitting(false)
     }
-  }
+  }, [completeOnboardingWithMigration, router])
 
-  const { handleBack, handleNext } = useSimpleOnboardingNavigation(
-    6, // step number
-    '/onboarding/budget-guests',
-    '/dashboard/moodboard-reveal'
-  )
-
-  const handleCompleteWithRedirect = () => {
-    handleComplete()
-  }
-
-  // DEBUG: Direct database check
-  const debugDatabaseState = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      console.log('🔍 DEBUG: Current user:', user?.email, user?.id)
-      
-      if (user) {
-        const { data: workspace, error } = await supabase
-          .from('workspaces')
-          .select(`
-            id,
-            name,
-            onboarding_completed_at,
-            workspace_members!inner(user_id, role)
-          `)
-          .eq('workspace_members.user_id', user.id)
-          .single()
-        
-        console.log('🔍 DEBUG: Workspace query result:', { workspace, error })
-        console.log('🔍 DEBUG: onboarding_completed_at:', workspace?.onboarding_completed_at)
-      }
-    } catch (error) {
-      console.error('🔍 DEBUG: Error:', error)
-    }
-  }
-
-  if (isSubmitting) {
+  // Loading state
+  if (isLoadingOnboarding || isSubmitting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
         <div className="text-center space-y-4">
           <div className="animate-spin">
             <Icon name="loader" className="h-8 w-8 text-purple-600" />
           </div>
-          <p className="text-purple-600">Creating your personalized wedding journey...</p>
+          <p className="text-purple-600">
+            {isSubmitting ? "Creating your personalized wedding journey..." : "Loading your wedding details..."}
+          </p>
         </div>
       </div>
     )
   }
 
+  // Error state for onboarding data
+  if (onboardingError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
+        <div className="text-center space-y-4 max-w-md">
+          <Icon name="alertCircle" className="h-16 w-16 text-red-500 mx-auto" />
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-gray-900">Unable to Load Your Details</h1>
+            <p className="text-gray-600">{onboardingError}</p>
+          </div>
+          <div className="space-y-3">
+            <button 
+              onClick={() => router.push('/onboarding')}
+              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              <Icon name="arrowLeft" className="h-4 w-4 mr-2 inline" />
+              Return to Onboarding
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Prepare left content (moodboard or loading state)
+  const leftContent = () => {
+    if (isGeneratingMoodboard) {
+      return <MoodboardGeneratingState message={generatingMessage} variant="onboarding" />
+    }
+    
+    if (moodboard) {
+      return (
+        <div className="w-full h-full">
+          <MoodboardGrid
+            imageUrl={moodboard.image_url}
+            layout="single"
+          />
+        </div>
+      )
+    }
+    
+    if (moodboardError) {
+      return (
+        <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+          <div className="text-center space-y-2 p-4">
+            <Icon name="image" className="h-8 w-8 text-gray-400 mx-auto" />
+            <p className="text-xs text-gray-500">Moodboard generation failed</p>
+            <p className="text-xs text-gray-400">You can still continue</p>
+          </div>
+        </div>
+      )
+    }
+    
+    // Fallback - should not reach here with auto-generation
+    return (
+      <div className="w-full h-full bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center space-y-2 p-4">
+          <Icon name="sparkles" className="h-8 w-8 text-purple-400 mx-auto" />
+          <p className="text-xs text-purple-600">Preparing your moodboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Navigation handlers
+  const handleBack = () => {
+    router.push('/onboarding/budget-guests')
+  }
+
   return (
     <OnboardingLayout
       currentStep={7}
-      imageIcon="checkCircle"
-      imageTitle="Almost Ready"
-      imageSubtitle="Your Journey Begins"
-      title="Perfect! Here's what we've learned about your dream wedding."
-      description="We'll use this information to create your personalized wedding planning experience."
+      totalSteps={7}
+      customLeftContent={leftContent()}
+      showDefaultImage={false}
+      leftContentClassName="bg-white"
+      title={moodboard ? "Your Wedding Vision" : "Almost Ready"}
+      subtitle={moodboard ? "AI-crafted inspiration just for you" : undefined}
+      description={moodboard 
+        ? "We've created a personalized moodboard and summary based on your preferences. Continue to start planning your dream wedding."
+        : "We're creating your personalized wedding vision. This will only take a moment..."
+      }
       onBack={handleBack}
-      onNext={handleCompleteWithRedirect}
-      nextButtonText="Complete Setup"
-      canProceed={true}
-      isNavigating={false}
+      onNext={handleCompleteWithMigration}
+      nextButtonText={canProceed ? "Continue to Dashboard" : "Please wait..."}
+      canProceed={canProceed}
+      isNavigating={isSubmitting}
+      loadingText="Creating your personalized wedding journey..."
     >
-      {/* Summary Cards */}
-      <div className="space-y-4">
-        {onboardingData.coupleDetails && (
-          <div className="p-4 border-2 border-primary/20 rounded-lg bg-primary/5">
-            <div className="flex items-start space-x-3">
-              <Icon name="heart" className="h-5 w-5 text-primary mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-gray-900">Your Love Story</h3>
-                <p className="text-sm text-gray-600">
-                  {onboardingData.coupleDetails.partner1Name} & {onboardingData.coupleDetails.partner2Name}
-                  {onboardingData.coupleDetails.weddingDate && 
-                    ` • Wedding: ${new Date(onboardingData.coupleDetails.weddingDate).toLocaleDateString()}`
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {onboardingData.guestInfo && (
-          <div className="p-4 border-2 border-secondary/20 rounded-lg bg-secondary/5">
-            <div className="flex items-start space-x-3">
-              <Icon name="users" className="h-5 w-5 text-secondary mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-gray-900">Guest Details</h3>
-                <p className="text-sm text-gray-600">
-                  {onboardingData.guestInfo.guestCount} guests • {onboardingData.guestInfo.internationalGuests} international
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {onboardingData.weddingStyle && (
-          <div className="p-4 border-2 border-green-200 rounded-lg bg-green-50">
-            <div className="flex items-start space-x-3">
-              <Icon name="sparkles" className="h-5 w-5 text-green-600 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-gray-900">Style & Vision</h3>
-                <p className="text-sm text-gray-600">
-                  {onboardingData.weddingStyle.themes?.join(', ')} • {onboardingData.weddingStyle.colorPalette || 'Custom palette'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {onboardingData.experiencesExtras && (
-          <div className="p-4 border-2 border-purple-200 rounded-lg bg-purple-50">
-            <div className="flex items-start space-x-3">
-              <Icon name="calendar" className="h-5 w-5 text-purple-600 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-gray-900">Ceremony & Experiences</h3>
-                <p className="text-sm text-gray-600">
-                  {onboardingData.experiencesExtras.ceremonyType} ceremony • {onboardingData.experiencesExtras.experiences?.length || 0} special experiences
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      {/* DEBUG: Temporary debug button */}
-      <div className="mt-4 text-center">
-        <button
-          onClick={debugDatabaseState}
-          className="px-4 py-2 bg-gray-100 text-gray-600 rounded text-sm hover:bg-gray-200"
-        >
-          🔍 Debug Database State
-        </button>
-      </div>
+      {/* Wedding Data Summary */}
+      {isReady && (
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Wedding Details</h3>
+          <OnboardingDataSummary 
+            onboardingData={onboardingData}
+          />
+          
+          {/* Debug: Show raw data structure */}
+          {process.env.NODE_ENV === 'development' && (
+            <details className="mt-8">
+              <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
+                🔍 Debug: Raw onboarding data
+              </summary>
+              <pre className="mt-2 text-xs bg-gray-100 p-3 rounded overflow-auto max-h-40">
+                {JSON.stringify(onboardingData, null, 2)}
+              </pre>
+            </details>
+          )}
+        </div>
+      )}
     </OnboardingLayout>
   )
 }

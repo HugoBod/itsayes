@@ -11,10 +11,13 @@ interface OnboardingLayoutProps {
   currentStep?: number
   totalSteps?: number
   
-  // Left side image content
-  imageIcon: string
-  imageTitle: string
-  imageSubtitle: string
+  // Left side content - either default image or custom content
+  imageIcon?: string
+  imageTitle?: string
+  imageSubtitle?: string
+  customLeftContent?: ReactNode  // Custom content for left side
+  leftContentClassName?: string  // Additional styling for left content
+  showDefaultImage?: boolean     // Whether to show default image (true by default)
   
   // Main content
   title: string
@@ -46,6 +49,9 @@ export const OnboardingLayout = memo(function OnboardingLayout({
   imageIcon,
   imageTitle,
   imageSubtitle,
+  customLeftContent,
+  leftContentClassName = '',
+  showDefaultImage = true,
   title,
   subtitle,
   description,
@@ -69,33 +75,47 @@ export const OnboardingLayout = memo(function OnboardingLayout({
   return (
     <div className={`min-h-screen bg-white ${className}`}>
       <div className="flex flex-col lg:flex-row min-h-screen">
-        {/* Left side - Big picture - Hidden on mobile, shown on desktop */}
-        <div className="hidden lg:flex lg:w-1/3 lg:flex-col lg:justify-center lg:px-4 xl:px-6 lg:bg-gradient-wedding">
-          <div className="relative max-w-xs mx-auto">
-            <div className="aspect-[4/5] bg-gradient-warm rounded-xl lg:rounded-2xl shadow-luxury overflow-hidden">
-              <div className="w-full h-full bg-gradient-to-br from-muted/20 to-background/20 flex items-center justify-center">
-                <div className="text-center space-y-3 lg:space-y-4 p-4">
-                  <div className="flex justify-center">
-                    <div className="flex h-12 w-12 lg:h-16 lg:w-16 items-center justify-center rounded-full bg-white shadow-lg">
-                      <Icon name={imageIcon as any} className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
+        {/* Left side - Big picture or Custom Content - Hidden on mobile, shown on desktop */}
+        <div className={`hidden lg:flex lg:w-1/3 lg:flex-col lg:justify-center lg:px-4 xl:px-6 ${showDefaultImage ? 'lg:bg-gradient-wedding' : ''} ${leftContentClassName}`}>
+          {customLeftContent && !showDefaultImage ? (
+            // Custom content (e.g., moodboard)
+            <div className="relative max-w-xs mx-auto">
+              <div className="aspect-[4/5] rounded-xl lg:rounded-2xl shadow-luxury overflow-hidden">
+                {customLeftContent}
+              </div>
+              
+              {/* Decorative elements for custom content */}
+              <div className="absolute -top-3 -right-3 h-8 w-8 lg:h-12 lg:w-12 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 opacity-60 blur-lg"></div>
+              <div className="absolute -bottom-3 -left-3 h-16 w-16 lg:h-20 lg:w-20 rounded-full bg-gradient-to-br from-secondary/30 to-primary/30 opacity-60 blur-lg"></div>
+            </div>
+          ) : (
+            // Default image content
+            <div className="relative max-w-xs mx-auto">
+              <div className="aspect-[4/5] bg-gradient-warm rounded-xl lg:rounded-2xl shadow-luxury overflow-hidden">
+                <div className="w-full h-full bg-gradient-to-br from-muted/20 to-background/20 flex items-center justify-center">
+                  <div className="text-center space-y-3 lg:space-y-4 p-4">
+                    <div className="flex justify-center">
+                      <div className="flex h-12 w-12 lg:h-16 lg:w-16 items-center justify-center rounded-full bg-white shadow-lg">
+                        <Icon name={imageIcon as any} className="h-6 w-6 lg:h-8 lg:w-8 text-primary" />
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-base lg:text-lg font-bold text-white drop-shadow-lg">{imageTitle}</h3>
-                    <p className="text-white/90 text-xs lg:text-sm drop-shadow">{imageSubtitle}</p>
+                    <div className="space-y-1">
+                      <h3 className="text-base lg:text-lg font-bold text-white drop-shadow-lg">{imageTitle}</h3>
+                      <p className="text-white/90 text-xs lg:text-sm drop-shadow">{imageSubtitle}</p>
+                    </div>
                   </div>
                 </div>
               </div>
+              
+              {/* Decorative elements */}
+              <div className="absolute -top-3 -right-3 h-8 w-8 lg:h-12 lg:w-12 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 opacity-60 blur-lg"></div>
+              <div className="absolute -bottom-3 -left-3 h-16 w-16 lg:h-20 lg:w-20 rounded-full bg-gradient-to-br from-secondary/30 to-primary/30 opacity-60 blur-lg"></div>
             </div>
-            
-            {/* Decorative elements */}
-            <div className="absolute -top-3 -right-3 h-8 w-8 lg:h-12 lg:w-12 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 opacity-60 blur-lg"></div>
-            <div className="absolute -bottom-3 -left-3 h-16 w-16 lg:h-20 lg:w-20 rounded-full bg-gradient-to-br from-secondary/30 to-primary/30 opacity-60 blur-lg"></div>
-          </div>
+          )}
         </div>
 
         {/* Right side - Form */}
-        <div className="flex w-full lg:w-2/3 flex-col justify-center px-4 sm:px-6 lg:px-12 xl:px-16 py-8 lg:py-0 pt-32 lg:pt-24">
+        <div className="flex w-full lg:w-2/3 flex-col justify-center px-4 sm:px-6 lg:px-12 xl:px-16 py-8 lg:py-0">
           <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl mx-auto space-y-6 sm:space-y-8">
             {/* Mobile preview image - Only shown on mobile */}
             <div className="lg:hidden mb-8">

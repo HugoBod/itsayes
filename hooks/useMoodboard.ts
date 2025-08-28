@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase-client'
+import { createClientComponentClient } from '@/lib/supabase'
 
 interface MoodboardData {
   image_url: string
@@ -51,6 +51,7 @@ export function useMoodboard(): UseMoodboardReturn {
 
   const checkExistingMoodboard = async () => {
     try {
+      const supabase = createClientComponentClient()
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
@@ -78,6 +79,7 @@ export function useMoodboard(): UseMoodboardReturn {
       setIsGenerating(true)
       setError(null)
 
+      const supabase = createClientComponentClient()
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         setError('Not authenticated')
@@ -138,6 +140,7 @@ export function useMoodboard(): UseMoodboardReturn {
     try {
       if (!moodboard) return null
 
+      const supabase = createClientComponentClient()
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         setError('Not authenticated')
