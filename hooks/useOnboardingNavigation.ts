@@ -64,6 +64,7 @@ export function useOnboardingNavigation({
         return
       }
 
+      setIsSaving(false)
       setIsNavigating(true)
       
       setTimeout(() => {

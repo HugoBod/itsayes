@@ -1,5 +1,12 @@
 import OpenAI from 'openai'
 import { storageService } from './storage-service'
+import { createClient } from '@supabase/supabase-js'
+import { Database } from './types/database'
+import { locationContextService, LocationContext } from './location-context-service'
+import { imageGenerationService, GeneratedImage } from './image-generation-service'
+import { imageCompositionService, MoodboardLayout } from './image-composition-service'
+
+type SupabaseClient = ReturnType<typeof createClient<Database>>
 
 interface OnboardingData {
   step_1?: {
@@ -58,6 +65,14 @@ interface MoodboardGenerationResult {
       model: string
       generated_at: string
       fallback_reason?: string
+      generation_type: 'single' | 'multi-image'
+      layout_type?: MoodboardLayout['type']
+      location_context?: LocationContext
+    }
+    source_images?: GeneratedImage[]
+    composition_metadata?: {
+      layout: MoodboardLayout
+      final_dimensions: { width: number; height: number }
     }
   }
   error?: string
@@ -437,114 +452,69 @@ Format your response as JSON:
   }
 
   /**
-   * Generates a complete moodboard using AI with optional storage
+   * Generates a complete moodboard using enhanced multi-image AI with optional storage
    */
   async generateMoodboard(
     rawOnboardingData: any, 
-    workspaceId?: string
+    workspaceId?: string,
+    supabase?: SupabaseClient,
+    options?: {
+      layoutType?: MoodboardLayout['type']
+      useLocationContext?: boolean
+      generationType?: 'single' | 'multi-image'
+    }
   ): Promise<MoodboardGenerationResult> {
+    const startTime = Date.now()
+    const layoutType = options?.layoutType || 'magazine'
+    const useLocationContext = options?.useLocationContext !== false
+    const generationType = options?.generationType || 'multi-image'
+    
     try {
       // Normalize the data structure first
       const onboardingData = this.normalizeOnboardingData(rawOnboardingData)
       
-      // Generate insights first (faster and more reliable)
-      const insightsPromise = this.generateWeddingInsights(onboardingData)
-
-      // Generate DALL-E prompt
-      const dallePrompt = this.generateDALLEPrompt(onboardingData)
+      console.log(`🚀 Starting ${generationType} moodboard generation with ${layoutType} layout`)
       
-      let imageUrl: string
-      let generationModel = "dall-e-3"
-
-      try {
-        // Check if OpenAI is available
-        if (!this.openai) {
-          throw new Error('OpenAI not configured - using fallback images')
-        }
-
-        // Attempt DALL-E generation with timeout
-        const imageResponse = await Promise.race([
-          this.openai.images.generate({
-            model: "dall-e-3",
-            prompt: dallePrompt,
-            size: "1024x1024",
-            quality: "standard",
-            n: 1,
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('DALL-E generation timeout')), 30000)
-          )
-        ]) as any
-
-        if (!imageResponse.data[0]?.url) {
-          throw new Error('No image URL returned from DALL-E')
-        }
-        
-        imageUrl = imageResponse.data[0].url
-      } catch (imageError) {
-        console.warn('DALL-E generation failed, using fallback:', imageError)
-        
-        // Use fallback image generation
-        const fallback = this.generateFallbackMoodboard(rawOnboardingData)
-        if (fallback.success && fallback.data) {
-          const insights = await insightsPromise
-          return {
-            success: true,
-            data: {
-              ...fallback.data,
-              wedding_summary: insights.summary,
-              ai_insights: insights.insights,
-              style_guide: insights.styleGuide,
-              generation_metadata: {
-                ...fallback.data.generation_metadata,
-                fallback_reason: imageError instanceof Error ? imageError.message : 'Unknown error'
-              }
-            }
-          }
-        }
-        throw imageError
-      }
-
-      // Wait for insights to complete
-      const insights = await insightsPromise
-
-      // Store image if workspaceId is provided
-      let storedImageUrl: string | undefined
-      let storedImagePath: string | undefined
-      
-      if (workspaceId && imageUrl.startsWith('https://')) {
+      // Get location context if requested and location is provided
+      let locationContext: LocationContext | undefined
+      if (useLocationContext && onboardingData.step_2?.wedding_location) {
         try {
-          const storageResult = await storageService.saveMoodboardImage(
-            imageUrl, 
-            workspaceId, 
-            { type: 'main' }
+          locationContext = await locationContextService.getLocationContext(
+            onboardingData.step_2.wedding_location
           )
-          
-          if (storageResult.success) {
-            storedImageUrl = storageResult.url
-            storedImagePath = storageResult.path
-          }
-        } catch (storageError) {
-          console.warn('Failed to store image, continuing with original URL:', storageError)
+          console.log('✅ Location context retrieved:', locationContext.name)
+        } catch (locationError) {
+          console.warn('⚠️ Failed to get location context:', locationError)
         }
+      }
+      
+      // Generate insights with location context
+      const insightsPromise = this.generateWeddingInsights(onboardingData)
+      
+      // Choose generation method
+      if (generationType === 'multi-image') {
+        return await this.generateMultiImageMoodboard(
+          onboardingData, 
+          locationContext, 
+          workspaceId, 
+          supabase, 
+          layoutType,
+          insightsPromise,
+          startTime
+        )
+      } else {
+        return await this.generateSingleImageMoodboard(
+          onboardingData,
+          locationContext,
+          workspaceId,
+          supabase,
+          insightsPromise,
+          startTime
+        )
       }
 
-      return {
-        success: true,
-        data: {
-          image_url: storedImageUrl || imageUrl,
-          stored_image_url: storedImageUrl,
-          stored_image_path: storedImagePath,
-          wedding_summary: insights.summary,
-          ai_insights: insights.insights,
-          style_guide: insights.styleGuide,
-          generation_metadata: {
-            prompt_used: dallePrompt,
-            model: generationModel,
-            generated_at: new Date().toISOString()
-          }
-        }
-      }
+      // This method will be removed as it's replaced by the new approach
+      throw new Error('Legacy generation method - should not be called')
     } catch (error) {
       console.error('Error generating moodboard:', error)
       
@@ -605,6 +575,266 @@ Format your response as JSON:
         error: error instanceof Error ? error.message : 'Unknown error occurred'
       }
     }
+  }
+
+  /**
+   * Generates moodboard using multi-image approach with composition
+   */
+  private async generateMultiImageMoodboard(
+    onboardingData: OnboardingData,
+    locationContext: LocationContext | undefined,
+    workspaceId: string | undefined,
+    supabase: SupabaseClient | undefined,
+    layoutType: MoodboardLayout['type'],
+    insightsPromise: Promise<any>,
+    startTime: number
+  ): Promise<MoodboardGenerationResult> {
+    try {
+      console.log('🎨 Generating multi-image moodboard...')
+      
+      // Generate multiple specialized images in parallel with insights
+      const [imageResult, insights] = await Promise.all([
+        imageGenerationService.generateMultipleImages(onboardingData, locationContext),
+        insightsPromise
+      ])
+      
+      if (!imageResult.success || !imageResult.images) {
+        throw new Error(imageResult.error || 'Failed to generate images')
+      }
+      
+      console.log(`✅ Generated ${imageResult.images.length} specialized images`)
+      
+      // Compose images into final moodboard
+      console.log('🖼️ Composing final moodboard...')
+      const compositionResult = await imageCompositionService.composeMoodboard(
+        imageResult.images,
+        workspaceId,
+        supabase,
+        layoutType
+      )
+      
+      if (!compositionResult.success) {
+        throw new Error(compositionResult.error || 'Failed to compose moodboard')
+      }
+      
+      const totalTime = Date.now() - startTime
+      console.log(`✅ Multi-image moodboard completed in ${totalTime}ms`)
+      
+      return {
+        success: true,
+        data: {
+          image_url: compositionResult.composed_image_url || 'data:image/jpeg;base64,' + compositionResult.image_buffer?.toString('base64'),
+          stored_image_url: compositionResult.composed_image_url,
+          stored_image_path: compositionResult.stored_image_path,
+          wedding_summary: insights.summary,
+          ai_insights: insights.insights,
+          style_guide: insights.styleGuide,
+          generation_metadata: {
+            prompt_used: 'Multi-image generation with location context',
+            model: 'dall-e-3-multi',
+            generated_at: new Date().toISOString(),
+            generation_type: 'multi-image',
+            layout_type: layoutType,
+            location_context: locationContext
+          },
+          source_images: imageResult.images,
+          composition_metadata: compositionResult.composition_metadata
+        }
+      }
+    } catch (error) {
+      console.error('❌ Multi-image generation failed:', error)
+      
+      // Fallback to single image generation
+      console.log('🔄 Falling back to single image generation...')
+      return await this.generateSingleImageMoodboard(
+        onboardingData,
+        locationContext,
+        workspaceId,
+        supabase,
+        insightsPromise,
+        startTime
+      )
+    }
+  }
+
+  /**
+   * Generates moodboard using enhanced single image approach
+   */
+  private async generateSingleImageMoodboard(
+    onboardingData: OnboardingData,
+    locationContext: LocationContext | undefined,
+    workspaceId: string | undefined,
+    supabase: SupabaseClient | undefined,
+    insightsPromise: Promise<any>,
+    startTime: number
+  ): Promise<MoodboardGenerationResult> {
+    try {
+      console.log('🖼️ Generating enhanced single image moodboard...')
+      
+      // Generate enhanced DALL-E prompt with location context
+      const enhancedPrompt = this.generateEnhancedDALLEPrompt(onboardingData, locationContext)
+      
+      let imageUrl: string
+      let generationModel = "dall-e-3"
+
+      try {
+        // Check if OpenAI is available
+        if (!this.openai) {
+          throw new Error('OpenAI not configured - using fallback images')
+        }
+
+        // Attempt DALL-E generation with timeout
+        const imageResponse = await Promise.race([
+          this.openai.images.generate({
+            model: "dall-e-3",
+            prompt: enhancedPrompt,
+            size: "1024x1024",
+            quality: "standard",
+            n: 1,
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('DALL-E generation timeout')), 30000)
+          )
+        ]) as any
+
+        if (!imageResponse.data[0]?.url) {
+          throw new Error('No image URL returned from DALL-E')
+        }
+        
+        imageUrl = imageResponse.data[0].url
+        console.log('✅ Enhanced single image generated')
+      } catch (imageError) {
+        console.warn('DALL-E generation failed, using fallback:', imageError)
+        
+        // Use fallback image generation
+        const fallback = this.generateFallbackMoodboard(onboardingData)
+        if (fallback.success && fallback.data) {
+          const insights = await insightsPromise
+          return {
+            success: true,
+            data: {
+              ...fallback.data,
+              wedding_summary: insights.summary,
+              ai_insights: insights.insights,
+              style_guide: insights.styleGuide,
+              generation_metadata: {
+                ...fallback.data.generation_metadata,
+                fallback_reason: imageError instanceof Error ? imageError.message : 'Unknown error',
+                generation_type: 'single',
+                location_context: locationContext
+              }
+            }
+          }
+        }
+        throw imageError
+      }
+
+      // Wait for insights to complete
+      const insights = await insightsPromise
+
+      // Store image if workspaceId is provided
+      let storedImageUrl: string | undefined
+      let storedImagePath: string | undefined
+      
+      if (workspaceId && imageUrl.startsWith('https://') && supabase) {
+        try {
+          const storageResult = await storageService.saveMoodboardImage(
+            supabase,
+            imageUrl, 
+            workspaceId, 
+            { type: 'enhanced-single' }
+          )
+          
+          if (storageResult.success) {
+            storedImageUrl = storageResult.url
+            storedImagePath = storageResult.path
+          }
+        } catch (storageError) {
+          console.warn('Failed to store image, continuing with original URL:', storageError)
+        }
+      }
+
+      const totalTime = Date.now() - startTime
+      console.log(`✅ Enhanced single image moodboard completed in ${totalTime}ms`)
+
+      return {
+        success: true,
+        data: {
+          image_url: storedImageUrl || imageUrl,
+          stored_image_url: storedImageUrl,
+          stored_image_path: storedImagePath,
+          wedding_summary: insights.summary,
+          ai_insights: insights.insights,
+          style_guide: insights.styleGuide,
+          generation_metadata: {
+            prompt_used: enhancedPrompt,
+            model: generationModel,
+            generated_at: new Date().toISOString(),
+            generation_type: 'single',
+            location_context: locationContext
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Enhanced single image generation failed:', error)
+      
+      // Ultimate fallback
+      return this.generateFallbackMoodboard(onboardingData)
+    }
+  }
+
+  /**
+   * Generates enhanced DALL-E prompt with location context
+   */
+  private generateEnhancedDALLEPrompt(
+    onboardingData: OnboardingData, 
+    locationContext?: LocationContext
+  ): string {
+    const characteristics = this.extractWeddingCharacteristics(onboardingData)
+    
+    const basePrompt = "Create a wedding moodboard with 4 distinct sections in a 2x2 grid layout. Each section should showcase different aspects of the wedding:"
+    
+    const sections = [
+      "Top-left: Ceremony setting and decor",
+      "Top-right: Color palette and floral arrangements", 
+      "Bottom-left: Reception atmosphere and table settings",
+      "Bottom-right: Wedding cake and dessert styling"
+    ]
+
+    // Enhanced with location context
+    let locationEnhancement = ""
+    if (locationContext) {
+      locationEnhancement = `
+
+LOCATION CONTEXT for ${locationContext.name}:
+- Architecture: ${locationContext.architecture_style}
+- Popular venues: ${locationContext.popular_venues.join(', ')}
+- Cultural elements: ${locationContext.cultural_elements.join(', ')}
+- Climate: ${locationContext.climate}
+- Local traditions: ${locationContext.local_traditions.join(', ')}
+
+Incorporate these location-specific elements naturally throughout the moodboard sections.`
+    }
+
+    const styleRequirements = [
+      "Professional photography style",
+      "High-end wedding magazine aesthetic", 
+      "Cohesive color scheme throughout",
+      "Authentic to the location's cultural and architectural style",
+      "Elegant typography for any text elements",
+      "Clean, modern layout with subtle borders between sections"
+    ]
+
+    return `${basePrompt}
+
+${sections.join('\n')}
+
+Wedding characteristics: ${characteristics}${locationEnhancement}
+
+Style requirements:
+${styleRequirements.join('\n')}
+
+The overall mood should be romantic, elegant, and aspirational, capturing the unique vision for this couple's special day while authentically representing the chosen location.`
   }
 }
 

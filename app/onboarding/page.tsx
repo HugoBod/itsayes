@@ -26,9 +26,6 @@ export default function OnboardingPage() {
     setSelectedType(type)
   }
 
-  const handleSignIn = () => {
-    // router.push('/auth?mode=signin')
-  }
 
   return (
     <OnboardingLayout
@@ -73,18 +70,6 @@ export default function OnboardingPage() {
           <Icon name="briefcase" className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6" />
           I am a Wedding Planner
         </Button>
-      </div>
-
-      <div className="text-center pt-3 sm:pt-4">
-        <p className="text-sm text-gray-600">
-          Already have an account?{' '}
-          <button
-            onClick={handleSignIn}
-            className="text-primary hover:text-primary/80 font-medium"
-          >
-            Sign In
-          </button>
-        </p>
       </div>
     </OnboardingLayout>
   )

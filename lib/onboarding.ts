@@ -1,6 +1,6 @@
 'use client'
 
-import { supabase } from './supabase-client'
+import { createClientComponentClient } from './supabase'
 import type { Database } from './types/database'
 
 // Type definitions for onboarding data structure
@@ -35,6 +35,7 @@ class OnboardingDataService implements OnboardingService {
     if (this.workspaceId) return this.workspaceId
 
     try {
+      const supabase = createClientComponentClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return null
 
@@ -71,6 +72,7 @@ class OnboardingDataService implements OnboardingService {
         return { success: false, error: 'No workspace found' }
       }
 
+      const supabase = createClientComponentClient()
       // Get current onboarding data
       const { data: workspace, error: fetchError } = await supabase
         .from('workspaces')
@@ -123,6 +125,7 @@ class OnboardingDataService implements OnboardingService {
         return { data: null, error: 'No workspace found' }
       }
 
+      const supabase = createClientComponentClient()
       const { data: workspace, error } = await supabase
         .from('workspaces')
         .select('onboarding_data_couple')
@@ -150,6 +153,7 @@ class OnboardingDataService implements OnboardingService {
         return { data: null, error: 'No workspace found' }
       }
 
+      const supabase = createClientComponentClient()
       const { data: workspace, error } = await supabase
         .from('workspaces')
         .select('onboarding_data_couple')
@@ -180,6 +184,7 @@ class OnboardingDataService implements OnboardingService {
         return migrationResult
       }
 
+      const supabase = createClientComponentClient()
       // Mark onboarding as completed
       const { error: updateError } = await supabase
         .from('workspaces')
@@ -203,6 +208,7 @@ class OnboardingDataService implements OnboardingService {
 
   private async migrateOnboardingToItems(workspaceId: string): Promise<{ success: boolean; error?: string }> {
     try {
+      const supabase = createClientComponentClient()
       // Get onboarding data
       const { data: workspace, error: fetchError } = await supabase
         .from('workspaces')
@@ -217,8 +223,24 @@ class OnboardingDataService implements OnboardingService {
       const onboardingData = workspace.onboarding_data_couple as OnboardingData
       const items = []
 
-      // Create Budget items from step 2 (couple details)
+      // Create Wedding Stage & Couple items from step 2 (ACTUAL DATA LOCATION)
       const coupleDetails = onboardingData?.step_2 as any
+      if (coupleDetails?.stage || coupleDetails?.weddingLocation) {
+        items.push({
+          workspace_id: workspaceId,
+          board_id: null,
+          type: 'wedding_stage',
+          data: {
+            planning_stage: coupleDetails.stage,
+            wedding_location: coupleDetails.weddingLocation,
+            created_from_onboarding: true
+          },
+          title: 'Wedding Planning Stage',
+          status: 'active'
+        })
+      }
+
+      // Create Budget items from step 2 (couple details) - ACTUAL DATA LOCATION
       if (coupleDetails?.budgetValue && coupleDetails?.currency) {
         items.push({
           workspace_id: workspaceId,
@@ -234,7 +256,7 @@ class OnboardingDataService implements OnboardingService {
         })
       }
 
-      // Create Guest items from step 3 (guest info)
+      // Create Guest items from step 3 (guest info) - ACTUAL DATA LOCATION  
       const guestInfo = onboardingData?.step_3 as any
       if (guestInfo?.guestCount) {
         items.push({
@@ -248,11 +270,31 @@ class OnboardingDataService implements OnboardingService {
             created_from_onboarding: true
           },
           title: 'Guest Information',
-          status: 'planning'
+          status: 'draft'
         })
       }
 
-      // Create Ceremony items from step 5 (budget-guests/experiences)
+      // Create Wedding Style items from step 4 (style preferences) - ACTUAL DATA LOCATION
+      const weddingStyle = onboardingData?.step_4 as any
+      if (weddingStyle?.themes || weddingStyle?.colorPalette) {
+        items.push({
+          workspace_id: workspaceId,
+          board_id: null,
+          type: 'wedding_style',
+          data: {
+            themes: weddingStyle.themes,
+            other_theme: weddingStyle.otherTheme,
+            selected_color_palette: weddingStyle.selectedColorPalette,
+            color_palette: weddingStyle.colorPalette,
+            inspiration: weddingStyle.inspiration,
+            created_from_onboarding: true
+          },
+          title: 'Wedding Style & Preferences',
+          status: 'active'
+        })
+      }
+
+      // Create Ceremony items from step 5 (budget-guests/experiences) - ACTUAL DATA LOCATION
       const experiences = onboardingData?.step_5 as any
       if (experiences?.ceremonyType) {
         items.push({
@@ -269,11 +311,11 @@ class OnboardingDataService implements OnboardingService {
             created_from_onboarding: true
           },
           title: 'Ceremony & Experiences',
-          status: 'planning'
+          status: 'draft'
         })
       }
 
-      // Create Wedding Date item from step 2
+      // Create Wedding Date item from step 2 (ACTUAL DATA LOCATION)
       if (coupleDetails?.weddingDate) {
         items.push({
           workspace_id: workspaceId,
@@ -285,11 +327,11 @@ class OnboardingDataService implements OnboardingService {
             created_from_onboarding: true
           },
           title: 'Wedding Date',
-          status: 'confirmed'
+          status: 'completed'
         })
       }
 
-      // Create Couple info item
+      // Create Couple info item from step 2 (ACTUAL DATA LOCATION)  
       if (coupleDetails?.partner1Name && coupleDetails?.partner2Name) {
         items.push({
           workspace_id: workspaceId,
@@ -305,16 +347,83 @@ class OnboardingDataService implements OnboardingService {
         })
       }
 
-      // Insert all items at once (for now, skip this since we need proper board_id and created_by)
-      // TODO: Implement proper item creation after onboarding completion
-      if (items.length > 0 && false) { // Temporarily disabled
-        const { error: insertError } = await supabase
+      // Get current user and default boards for proper item creation
+      if (items.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          return { success: false, error: 'User not authenticated for migration' }
+        }
+
+        // Get existing boards for this workspace
+        const { data: boards, error: boardsError } = await supabase
+          .from('boards')
+          .select('id, type')
+          .eq('workspace_id', workspaceId)
+          .order('position')
+
+        if (boardsError) {
+          console.warn('Could not fetch boards, items will be created without board assignment:', boardsError)
+        }
+
+        // Assign appropriate board_id based on item type
+        const finalItems = items.map(item => {
+          let boardId: string | undefined
+          
+          if (boards && boards.length > 0) {
+            // Try to find appropriate board by type
+            const targetBoard = boards.find(b => 
+              (item.type.includes('budget') && b.type === 'budget') ||
+              (item.type.includes('guest') && b.type === 'planning') ||
+              (item.type.includes('ceremony') && b.type === 'planning') ||
+              (item.type.includes('style') && b.type === 'planning') ||
+              (item.type.includes('stage') && b.type === 'planning')
+            )
+            
+            // Fallback to first board if no specific match
+            boardId = targetBoard?.id || boards[0]?.id
+          }
+
+          // Only include items with valid board_id (required by schema)
+          if (!boardId) {
+            console.warn(`Skipping item ${item.title} - no valid board found`)
+            return null
+          }
+
+          return {
+            workspace_id: item.workspace_id,
+            board_id: boardId,
+            type: item.type,
+            title: item.title,
+            data: item.data,
+            status: item.status as 'active' | 'completed' | 'draft' | 'archived',
+            created_by: user.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        }).filter((item): item is NonNullable<typeof item> => item !== null) // Remove null items
+
+        // Debug: Log what we're trying to insert
+        console.log('🔍 About to insert items:', JSON.stringify(finalItems, null, 2))
+        
+        // Insert all items
+        const { data: insertedItems, error: insertError } = await supabase
           .from('items')
-          .insert(items as any)
+          .insert(finalItems)
+          .select()
 
         if (insertError) {
-          return { success: false, error: `Failed to migrate items: ${insertError?.message || 'Unknown error'}` }
+          console.error('Migration error:', insertError)
+          console.error('Migration error code:', insertError.code)
+          console.error('Migration error message:', insertError.message)
+          console.error('Migration error details:', insertError.details)
+          console.error('Migration error hint:', insertError.hint)
+          console.error('Items attempted to insert:', JSON.stringify(finalItems, null, 2))
+          return { success: false, error: `Failed to migrate items: ${insertError.message || 'Unknown database error'}` }
         }
+        
+        console.log('✅ Successfully inserted items:', insertedItems)
+
+        console.log(`Successfully migrated ${finalItems.length} items from onboarding data`)
       }
 
       return { success: true }
@@ -331,6 +440,7 @@ class OnboardingDataService implements OnboardingService {
         return { completed: false, error: 'No workspace found' }
       }
 
+      const supabase = createClientComponentClient()
       const { data: workspace, error } = await supabase
         .from('workspaces')
         .select('onboarding_completed_at')

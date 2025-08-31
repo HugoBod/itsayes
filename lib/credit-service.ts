@@ -1,4 +1,7 @@
-import { supabase } from './supabase-client'
+import { createClient } from '@supabase/supabase-js'
+import { Database } from './types/database'
+
+type SupabaseClient = ReturnType<typeof createClient<Database>>
 
 interface CreditUsage {
   action: 'moodboard_generate' | 'moodboard_regenerate' | 'image_section_regenerate'
@@ -29,13 +32,13 @@ class CreditService {
     image_section_regenerate: 1,
   } as const
 
-  // Default credits for new accounts
-  private readonly DEFAULT_CREDITS = 10
+  // Default credits for new accounts (increased for development testing)
+  private readonly DEFAULT_CREDITS = 100
 
   /**
    * Gets the credit balance for a workspace
    */
-  async getCreditBalance(workspaceId: string): Promise<CreditBalance> {
+  async getCreditBalance(supabase: SupabaseClient, workspaceId: string): Promise<CreditBalance> {
     try {
       // Get workspace info
       const { data: workspace, error: workspaceError } = await supabase
@@ -107,10 +110,11 @@ class CreditService {
    * Checks if enough credits are available for an operation
    */
   async hasEnoughCredits(
+    supabase: SupabaseClient,
     workspaceId: string, 
     action: keyof typeof this.CREDIT_COSTS
   ): Promise<{ hasCredits: boolean; remaining: number; required: number }> {
-    const balance = await this.getCreditBalance(workspaceId)
+    const balance = await this.getCreditBalance(supabase, workspaceId)
     const required = this.CREDIT_COSTS[action]
     
     return {
@@ -124,13 +128,14 @@ class CreditService {
    * Uses credits for an operation and logs the transaction
    */
   async useCredits(
+    supabase: SupabaseClient,
     workspaceId: string, 
     userId: string, 
     usage: CreditUsage
   ): Promise<CreditTransaction> {
     try {
       // Check if enough credits available
-      const creditCheck = await this.hasEnoughCredits(workspaceId, usage.action)
+      const creditCheck = await this.hasEnoughCredits(supabase, workspaceId, usage.action)
       
       if (!creditCheck.hasCredits) {
         return {
@@ -172,7 +177,7 @@ class CreditService {
       }
 
       // Get updated balance
-      const newBalance = await this.getCreditBalance(workspaceId)
+      const newBalance = await this.getCreditBalance(supabase, workspaceId)
 
       return {
         success: true,
@@ -191,7 +196,7 @@ class CreditService {
   /**
    * Gets credit usage history for a workspace
    */
-  async getCreditHistory(workspaceId: string, limit: number = 20): Promise<{
+  async getCreditHistory(supabase: SupabaseClient, workspaceId: string, limit: number = 20): Promise<{
     success: boolean
     transactions?: Array<{
       id: string
@@ -221,7 +226,7 @@ class CreditService {
         action: (activity.data as any)?.credit_action || 'unknown',
         credits_used: (activity.data as any)?.credits_used || 0,
         description: (activity.data as any)?.description || '',
-        created_at: activity.created_at
+        created_at: activity.created_at || new Date().toISOString()
       })) || []
 
       return {

@@ -8,31 +8,23 @@ import { useCompleteOnboardingNavigation } from '@/hooks/useOnboardingNavigation
 const WEDDING_STAGES = [
   {
     value: 'engaged',
-    title: 'Fiancé(e)',
-    subtitle: 'Just got engaged and starting to dream',
-    icon: 'heart',
-    color: 'from-pink-500 to-rose-500'
+    title: 'Engaged',
+    icon: 'heart'
   },
   {
     value: 'planning',
     title: 'Planning Phase',
-    subtitle: 'Actively planning and making decisions',
-    icon: 'calendar',
-    color: 'from-purple-500 to-indigo-500'
+    icon: 'calendar'
   },
   {
     value: 'venue-booked',
     title: 'Venue Booked',
-    subtitle: 'Venue secured, working on details',
-    icon: 'mapPin',
-    color: 'from-blue-500 to-cyan-500'
+    icon: 'mapPin'
   },
   {
     value: 'idea-gathering',
     title: 'Idea Gathering',
-    subtitle: 'Exploring styles and inspiration',
-    icon: 'lightbulb',
-    color: 'from-amber-500 to-orange-500'
+    icon: 'lightbulb'
   }
 ]
 
@@ -64,7 +56,7 @@ export default function WeddingStageSelectionPage() {
       imageIcon="calendar"
       imageTitle="Your Journey"
       imageSubtitle="Every Chapter Matters"
-      title="Your story deserves its own path"
+      title="Your story deserves its own path."
       subtitle="What chapter of wedding planning are you in?"
       description="This helps me personalize your experience and provide the most relevant guidance for where you are right now."
       onBack={handleBack}
@@ -80,11 +72,10 @@ export default function WeddingStageSelectionPage() {
             <OnboardingButton
               key={stage.value}
               title={stage.title}
-              subtitle={stage.subtitle}
               icon={stage.icon}
               isSelected={selectedStage === stage.value}
               onClick={() => handleStageSelection(stage.value)}
-              variant="selection"
+              variant="simple"
             />
           ))}
         </div>
