@@ -1,0 +1,246 @@
+  What's Generated Today:
+
+  Current System (ai-service.ts:224-295):
+  - Single DALL-E prompt generating 4-section 2x2 grid moodboard
+  - Basic sections: Ceremony, Colors/Florals, Reception tables,
+  Wedding cake
+  - Generation types: Single image or multi-image with
+  composition
+  - Location context: Wikipedia + venue research for
+  architectural/cultural elements
+  - Storage: Supabase with fallback images
+  - Data source: Onboarding steps (couples, location, budget,
+  themes, ceremony)
+
+  Current Workflow:
+  1. Extract onboarding characteristics → single prompt
+  2. Generate via DALL-E-3 (1024x1024)
+  3. Store in Supabase + cache
+  4. Fallback to curated images if AI fails
+
+  ---
+  🎯 TARGET vs CURRENT COMPARISON
+
+  ✅ What Aligns:
+
+  - Location research (location-context-service.ts)
+  - Onboarding data extraction
+  - Color palette from user selection
+  - Multiple generation types (single/multi)
+  - Supabase storage architecture
+
+  ❌ Major Gaps:
+
+  1. Randomization Architecture Missing:
+  - Current: Static prompt templates
+  - Target: 10 categories × subcategories × probability weights
+  - Need: Category selection engine with weighted randomization
+
+  2. Photo Generation Strategy:
+  - Current: Single moodboard or 3 specialized images
+  (venue/decor/reception)
+  - Target: 3 distinct photos from randomized categories
+  - Need: Individual photo generation, not moodboard composition
+
+  3. Element Swapping Logic:
+  - Current: No intelligent content replacement
+  - Target: Detect flowers/tables/linens → swap if similar
+  - Need: Image analysis + replacement algorithms
+
+  ---
+  📋 DETAILED IMPLEMENTATION PLAN
+
+⏺ 🏗️ PHASE 1: Category Configuration System
+
+  Task 1.1: Create /lib/moodboard-categories.ts
+  - 10 categories with subcategories as per your specification
+  - Global pools: flowers, tables, linens, chairs
+  - Visibility matrix: Required vs Optional elements per
+  category
+  - Probability weights: Configurable per category
+  - TypeScript interfaces: Complete type safety
+
+  Task 1.2: Create /lib/moodboard-config.ts
+  - Environment pools: garden/ballroom/beachfront/etc.
+  - Time options: golden hour/blue hour/candlelit
+  - Template management: Prompt templates per category
+  - JSON configuration: Easy tweaking without redeploy
+
+  🎲 PHASE 2: Randomization Engine
+
+  Task 2.1: Create /lib/moodboard-randomizer.ts
+  - Weighted selection: pick() function with probability weights
+  - Seed support: Deterministic randomization for user
+  consistency
+  - Category picker: Select 3 distinct categories for photos
+  - Element selection: Apply visibility matrix + probability
+  rules
+  - Validation: Ensure 3 unique photos with distinct focus
+
+  Task 2.2: Algorithm Implementation:
+  interface RandomizerInput {
+    onboardingData: OnboardingData
+    seed?: number  // For user consistency
+    forceCategories?: string[]  // Debug/testing
+  }
+
+  interface RandomizerOutput {
+    photos: [
+      { category: string, subType: string, elements: {...} },
+      { category: string, subType: string, elements: {...} },
+      { category: string, subType: string, elements: {...} }
+    ]
+    colorPalette: string  // From onboarding
+  }
+
+  🤖 PHASE 3: Intelligent Prompt Generation
+
+  Task 3.1: Create /lib/moodboard-prompts.ts
+  - Template system: Category-specific prompt templates
+  - Smart merging: Inject selected elements only if probability
+  passed
+  - Location integration: Use existing
+  location-context-service.ts
+  - Onboarding integration: Extract user color palette +
+  preferences
+  - Quality tokens: "Editorial wedding photography, no people,
+  focus on [subject]"
+
+  Task 3.2: Prompt Enhancement:
+  - Randomization resistance: Add variation keywords to prevent
+  AI repetition
+  - Element swapping prep: Mark flowers/tables/linens for later
+  detection
+  - Composition guidance: Ensure varied angles/lighting per
+  photo
+
+  📸 PHASE 4: 3-Photo Generation Workflow
+
+  Task 4.1: Extend /lib/image-generation-service.ts
+  - New method: generateCategorizedPhotos(randomizedConfig, 
+  locationContext)
+  - Parallel generation: 3 photos simultaneously
+  - Individual prompts: Each photo gets category-specific prompt
+  - Timeout handling: Fallback per photo, not entire batch
+  - Quality assurance: Verify distinct visual focus
+
+  Task 4.2: Storage Strategy:
+  - Store 3 individual photos + metadata
+  - Track generation seed for user regeneration
+  - Cache intermediate results for performance
+
+  🖼️ PHASE 5: Backend Collage Composition
+
+  Task 5.1: Enhance /lib/image-composition-service.ts
+  - 3-photo layout: Replace current multi-image composition
+  - Smart positioning: Arrange based on photo categories
+  (ceremony larger?)
+  - Color integration: Add user color palette as visual element
+  - Typography: Add elegant text/spacing
+  - High resolution: Target final output quality
+
+  Task 5.2: Layout Options:
+  - Grid 3x1: Horizontal strip
+  - L-shape: Two large + one small
+  - Diagonal: Creative asymmetric arrangement
+  - User preference: Allow layout selection
+
+  🔄 PHASE 6: Element Swapping Logic
+
+  Task 6.1: Create /lib/image-analysis-service.ts
+  - Content detection: Identify flowers/tables/linens in
+  generated photos
+  - Similarity scoring: Compare visual elements between photos
+  - Smart replacement: Trigger re-generation with different
+  elements
+  - Fallback strategy: If swapping fails, proceed with originals
+
+  Task 6.2: Implementation Approach:
+  // Detect overlapping elements
+  const conflicts = await detectVisualConflicts(photos)
+  if (conflicts.length > 0) {
+    // Re-generate conflicting photos with different elements
+    const replacements = await
+  regenerateWithDifferentElements(conflicts)
+    photos = mergeReplacements(photos, replacements)
+  }
+
+  🔧 PHASE 7: API & Frontend Updates
+
+  Task 7.1: Update /app/api/moodboard/generate/route.ts
+  - New parameters: categories, seed, layout, skipSwapping
+  - Workflow integration: RandomizerConfig → PhotoGeneration →
+  Composition → Swapping
+  - Backward compatibility: Support existing single-image
+  fallback
+  - Error handling: Graceful degradation at each step
+
+  Task 7.2: Update /hooks/useMoodboard.ts
+  - New options: Category selection, layout preference,
+  regeneration per photo
+  - Metadata tracking: Store randomization seed + selected
+  categories
+  - Individual regeneration: Allow re-rolling specific photos
+  - Preview mode: Generate without final composition
+
+  🧪 PHASE 8: Testing & Validation
+
+  Task 8.1: Unit Testing:
+  - Randomization consistency (same seed = same result)
+  - Category distribution (10 categories properly weighted)
+  - Element selection (visibility matrix compliance)
+  - Prompt generation (template merging accuracy)
+
+  Task 8.2: Integration Testing:
+  - End-to-end photo generation workflow
+  - Fallback scenarios (AI failures, timeouts)
+  - User journey (onboarding → randomization → photos → collage)
+  - Performance benchmarks (< 45 seconds total generation)
+
+  ---
+  🎯 RECOMMENDATIONS & IMPROVEMENTS
+
+  1. Architecture Decisions:
+
+  - Keep existing system as fallback for reliability
+  - Incremental rollout: Feature flag for new vs old system
+  - Seed-based consistency: Users can regenerate exact same
+  result
+  - Configuration flexibility: JSON-based category/probability
+  config
+
+  2. Performance Optimizations:
+
+  - Parallel processing: Generate 3 photos simultaneously
+  - Smart caching: Cache category configs and element pools
+  - Progressive enhancement: Show individual photos as they
+  generate
+  - Timeout strategy: 30s per photo, 90s total maximum
+
+  3. User Experience:
+
+  - Preview categories: Show selected categories before
+  generation
+  - Individual regeneration: "Re-roll ceremony photo" buttons
+  - Layout selection: Let users choose final composition
+  - Seed preservation: "Generate more like this" functionality
+
+  4. Quality Assurance:
+
+  - Validation rules: Ensure 3 distinct photo types
+  - Content moderation: Verify appropriate wedding content
+  - Fallback strategy: Always have working moodboard generation
+  - Error recovery: Graceful handling of AI/network failures
+
+  ---
+  🚀 IMPLEMENTATION PRIORITY
+
+  Week 1: Phases 1-2 (Configuration + Randomization)
+  Week 2: Phases 3-4 (Prompts + Photo Generation)Week 3: Phases
+  5-6 (Composition + Swapping)
+  Week 4: Phases 7-8 (Integration + Testing)
+
+  This plan transforms your current single-prompt system into a
+  sophisticated 3-photo randomized generator with intelligent
+  element swapping and backend composition, exactly matching
+  your specifications.
