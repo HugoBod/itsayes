@@ -23,11 +23,17 @@ export default function SummaryPage() {
     completeOnboardingWithMigration
   } = useOnboardingMoodboard()
 
-  // Auto-generate moodboard when onboarding data is ready
+  // Auto-generate moodboard when onboarding data is ready (with debounce)
   useEffect(() => {
     if (isReady && !moodboard && !isGeneratingMoodboard && !hasGenerated && !moodboardError) {
       console.log('🎨 Auto-generating moodboard...')
-      generateMoodboard()
+      
+      // Small delay to prevent rapid re-renders
+      const timer = setTimeout(() => {
+        generateMoodboard()
+      }, 100)
+      
+      return () => clearTimeout(timer)
     }
   }, [isReady, moodboard, isGeneratingMoodboard, hasGenerated, moodboardError, generateMoodboard])
 
@@ -35,24 +41,27 @@ export default function SummaryPage() {
   // Handle completion with migration
   const handleCompleteWithMigration = useCallback(async () => {
     setIsSubmitting(true)
+    
+    // Navigate immediately for better UX
+    router.push('/dashboard')
+    
+    // Run migration in background - don't block navigation
     try {
-      console.log('🎯 Starting onboarding completion...')
+      console.log('🎯 Starting background migration...')
       
-      const result = await completeOnboardingWithMigration()
+      // Non-blocking migration
+      completeOnboardingWithMigration().then((result) => {
+        if (!result.success) {
+          console.error('❌ Background migration failed:', result.error)
+        } else {
+          console.log('✅ Background migration completed successfully!')
+        }
+      }).catch((error) => {
+        console.error('Error in background migration:', error)
+      })
       
-      if (!result.success) {
-        console.error('❌ Onboarding completion failed:', result.error)
-        // Still redirect to dashboard - user can see error there
-      } else {
-        console.log('✅ Onboarding completed successfully!')
-      }
-      
-      // Redirect to main dashboard (not moodboard-reveal)
-      router.push('/dashboard')
     } catch (error) {
-      console.error('Error completing onboarding:', error)
-      // Still redirect - better than being stuck
-      router.push('/dashboard')
+      console.error('Error starting background migration:', error)
     } finally {
       setIsSubmitting(false)
     }

@@ -1,0 +1,346 @@
+  📋 ANALYSE COMPLÈTE DU SYSTÈME D'ONBOARDING - IT'S A YES
+
+  🏗️ ARCHITECTURE GÉNÉRALE
+
+  Structure de Navigation
+
+  Votre onboarding suit un flux linéaire en 6 étapes principales :
+
+  1. /onboarding (root) → Sélection couple/planner
+  2. /onboarding/stage → Étape de planification + Lieu
+  3. /onboarding/couple-details → Noms + Date + Budget
+  4. /onboarding/guest-info → Invités + Spécifications
+  5. /onboarding/style → Thèmes + Couleurs + Inspiration
+  6. /onboarding/budget-guests → Cérémonie + Expériences
+  7. /onboarding/summary → Génération moodboard + Migration
+
+  Système de Stockage
+
+  - En cours : workspace.onboarding_data_couple (JSONB)
+  - Après completion : Migration vers la table items avec relations
+
+  📝 ANALYSE DÉTAILLÉE PAR ÉTAPE
+
+  Étape 1 : Page d'Accueil (/onboarding/page.tsx)
+
+  // Données collectées
+  user_type: 'couples' | 'planners'
+
+  // Hook utilisé
+  useCompleteOnboardingNavigation(1, '/', nextPath, validation, getData)
+
+  // Navigation
+  couples → '/onboarding/stage'
+  planners → '/onboarding/planners' (flux séparé, localStorage only)
+
+  Étape 2 : Stage (/onboarding/stage/page.tsx)
+
+  // Données collectées - step_2
+  {
+    stage: 'engaged' | 'planning' | 'venue-booked' | 'idea-gathering',
+    weddingLocation: string // Input libre pour lieu
+  }
+
+  // Validation : stage + lieu requis
+  // Sauvegarde : onboardingService.saveStep(2, data)
+
+  Étape 3 : Couple Details (/onboarding/couple-details/page.tsx)
+
+  // Données collectées - step_2 (MÊME STEP QUE STAGE!)
+  {
+    partner1Name: string,
+    partner2Name: string,
+    weddingDate?: string, // ISO format ou null
+    stillDeciding?: boolean,
+    budgetValue: number, // Slider value
+    currency: 'USD' | 'EUR' | 'GBP' | 'CAD' | 'AUD'
+  }
+
+  // Features
+  - Calendrier custom avec react-hook-form + zod
+  - Slider budget avec formatage multi-devises
+  - Checkbox "still deciding" désactive date
+  - useOnboardingStepData(2) pour charger données existantes
+
+  Étape 4 : Guest Info (/onboarding/guest-info/page.tsx)
+
+  // Données collectées - step_3
+  {
+    guestCount: number, // Slider 5-300 par pas de 5
+    internationalGuests: string, // Options prédéfinies
+    specialRequirements: {
+      allergies: boolean,
+      accessibility: boolean,
+      otherNotes: string
+    }
+  }
+
+  // Constantes utilisées
+  INTERNATIONAL_GUEST_OPTIONS depuis lib/constants
+
+  Étape 5 : Style (/onboarding/style/page.tsx)
+
+  // Données collectées - step_4
+  {
+    themes: string[], // Multi-sélection checkboxes
+    otherTheme?: string, // Si "other" sélectionné
+    selectedColorPalette?: string, // Palette prédéfinie
+    colorPalette: string, // Input libre ou palette name
+    inspiration?: string // Textarea libre
+  }
+
+  // Palettes de couleurs hardcodées (8 options)
+  COLOR_PALETTE = [
+    'Blush & Gold', 'Classic White', 'Sage & Cream',
+    'Navy & Rose', 'Burgundy & Gold', 'Dusty Blue',
+    'Terracotta & Cream', 'Lavender & Silver'
+  ]
+
+  Étape 6 : Budget-Guests (/onboarding/budget-guests/page.tsx)
+
+  // Données collectées - step_5
+  {
+    ceremonyType: 'religious' | 'civil' | 'symbolic' | 'mixed',
+    religiousType?: string, // Dropdown si religious
+    otherReligious?: string, // Si "Other" sélectionné
+    experiences: string[], // Multi-sélection checkboxes
+    otherExperience?: string, // Si "other" dans experiences
+    specialWishes?: string // Textarea libre
+  }
+
+  // Options religieuses
+  RELIGIOUS_OPTIONS = [
+    'Catholic', 'Christian (non-Catholic)', 'Muslim', 'Jewish',
+    'Hindu', 'Buddhist', 'Other'
+  ]
+
+  Étape 7 : Summary (/onboarding/summary/page.tsx)
+
+  PAGE COMPLEXE - GÉNÉRATION MOODBOARD + MIGRATION
+
+  // Hook principal : useOnboardingMoodboard()
+  // 1. Charge toutes les données onboarding
+  // 2. Auto-génère le moodboard au chargement
+  // 3. Affiche ThreePhotoDisplay avec animation cinématique
+  // 4. Migre vers dashboard avec completeOnboardingWithMigration()
+
+  // Séquence d'affichage
+  1. Loading avec logo animé
+  2. Auto-génération moodboard (forcée 3-photo grid-3x1)
+  3. ThreePhotoDisplay cinématique
+  4. Button "Continue to Dashboard" → migration complète
+
+  🔧 SYSTÈME DE HOOKS & SERVICES
+
+  1. useOnboardingNavigation.ts
+
+  4 hooks exportés :
+
+  // Hook principal avec toutes options
+  useOnboardingNavigation({step, prevPath, nextPath, validateData,
+  getStepData, loadingDelay})
+
+  // Hook simple sans validation
+  useSimpleOnboardingNavigation(step, prevPath, nextPath)
+
+  // Hook avec validation seulement  
+  useValidatedOnboardingNavigation(step, prevPath, nextPath, validateData)
+
+  // Hook complet (le plus utilisé)
+  useCompleteOnboardingNavigation(step, prevPath, nextPath, validateData,
+  getStepData)
+
+  // Hook pour charger data existante
+  useOnboardingStepData(step)
+
+  Fonctionnement :
+  - Validation optionnelle avant navigation
+  - Sauvegarde via onboardingService.saveStep(step, data)
+  - Loading states (isSaving, isNavigating)
+  - Gestion d'erreurs avec affichage
+
+  2. useOnboardingMoodboard.ts
+
+  Hook complexe qui combine onboarding + moodboard :
+
+  // Charge TOUTES les données onboarding
+  const { data: allSteps } = await onboardingService.getAllSteps()
+
+  // Transforme step_2 → coupleDetails + weddingStage  
+  // Transforme step_3 → guestInfo
+  // Transforme step_4 → weddingStyle  
+  // Transforme step_5 → experiencesExtras
+
+  // Utilise useMoodboard() pour génération
+  generateMoodboard({
+    generationType: '3-photo',
+    layoutType: 'grid-3x1',
+    useLocationContext: true
+  })
+
+  // Finalise avec migration complète
+  completeOnboardingWithMigration() →
+  onboardingService.completeOnboarding()
+
+  3. lib/onboarding.ts - OnboardingDataService
+
+  Service principal avec 5 méthodes :
+
+  // Sauvegarde étape dans workspace.onboarding_data_couple
+  saveStep(step: number, data: Record<string, any>)
+
+  // Récupère une étape spécifique  
+  getStep(step: number)
+
+  // Récupère toutes les étapes
+  getAllSteps()
+
+  // Complète onboarding + migrate vers items table
+  completeOnboarding()
+
+  // Vérifie si onboarding terminé
+  isOnboardingComplete()
+
+  Migration Logic :
+  Le completeOnboarding() transforme les données JSONB en items typés :
+  - step_2 → wedding_stage, budget_setting, wedding_date, couple_info
+  - step_3 → guest_summary
+  - step_4 → wedding_style
+  - step_5 → ceremony_details
+
+  🎨 SYSTÈME MOODBOARD (TRÈS SOPHISTIQUÉ)
+
+  Architecture 3-Photo System
+
+  // 1. lib/moodboard-randomizer.ts → buildScene()
+  // Génère 3 PhotoConfiguration aléatoires
+
+  // 2. lib/moodboard-categories.ts  
+  // 10 catégories avec subcategories, probabilities, elements
+
+  // 3. lib/moodboard-prompts.ts
+  // Templates dynamiques utilisant onboarding data
+
+  // 4. lib/image-generation-service.ts
+  // Génère 3 images via DALL-E avec prompts sophistiqués
+
+  // 5. lib/image-composition-service.ts  
+  // Compose moodboard final grid-3x1
+
+  Catégories & Prompts
+
+  10 catégories disponibles :
+  1. ceremony - Arches, allées, chaises cérémonie
+  2. reception_ballroom - Salles, plafonds, entrées
+  3. reception_table - Tables, centres de table, couverts
+  4. wedding_cake - Gâteaux multi-étages avec décor
+  5. photo_booth - Backdrops, props, éclairage
+  6. decorative_details - Papeterie, objets, bagues
+  7. couple_entrance - Allées cérémonie, décoration chemin
+  8. venue_aerial - Vues aériennes, terrasses, jardins
+  9. lighting_atmosphere - Éclairage, ambiances, mood
+  10. traditions_rituals - Rituels culturels/religieux
+
+  Templates dynamiques :
+  Les prompts utilisent OnboardingTemplateData :
+  - Noms du couple → personnalisation
+  - Type religieux → mandap/autel/croix approprié
+  - Couleurs palette → intégration naturelle
+  - Lieu → contexte géographique
+  - Budget/style → niveau de luxe
+
+  Prompts Exemple :
+
+  ceremony: (data) => `
+  ${data.ceremonyType} wedding ceremony just before guests arrive,
+  asymmetrical floral arch with ${data.colors.join(' and ')} arrangements,
+  wooden cross-back chairs in neat rows,
+  photographed at ${data.location} during golden hour,
+  documentary wedding photography style, depth of field
+  `
+
+  🚨 PROBLÈMES DÉTECTÉS
+
+  1. Inconsistance Data Mapping
+
+  // PROBLÈME : step_2 contient DEUX types de données
+  // Dans couple-details : noms + date + budget 
+  // Dans stage : stage + location
+  // → Même step_2 utilisé pour 2 pages différentes !
+
+  // IMPACT : Confusion, données mélangées
+
+  2. Flux Wedding Planner Obsolète
+
+  // /onboarding/planners/page.tsx utilise localStorage
+  // Pas d'intégration avec Supabase
+  // Code isolé du système principal
+  // → À supprimer ou refactorer complètement
+
+  3. Backup File Obsolète
+
+  // /onboarding/summary/page_backup.tsx présent
+  // → À supprimer pour éviter confusion
+
+  4. Constants Dependency
+
+  // lib/constants.ts utilisé mais non analysé
+  // CURRENCY_CONFIG, INTERNATIONAL_GUEST_OPTIONS importés
+  // → Vérifier existence et cohérence
+
+  5. Moodboard Complexity
+
+  Le système moodboard est extrêmement sophistiqué mais peut-être
+  over-engineered :
+  - 10+ fichiers interconnectés
+  - Randomisation complexe avec seeds
+  - Anti-repetition tokens
+  - Location context integration
+  - Image analysis et swapping
+  - Multiple fallback systems
+
+  Avantages : Très personnalisé, haute qualité
+  Inconvénients : Complexité maintenance, debugging difficile
+
+  ✅ POINTS FORTS
+
+  1. Architecture robuste avec hooks réutilisables
+  2. Validation complète à chaque étape
+  3. Persistance fiable via Supabase + JSONB
+  4. UX excellent avec loading states et animations
+  5. Système moodboard révolutionnaire avec IA personnalisée
+  6. Migration data propre vers architecture finale
+  7. Gestion erreurs complète avec retry logic
+  8. Responsive design sur tous composants
+
+  📊 MÉTRIQUES & PERFORMANCE
+
+  - 7 étapes onboarding total (6 + summary)
+  - ~3-4 minutes temps utilisateur estimé
+  - 5 appels API Supabase minimum par user
+  - 3 images DALL-E générées au summary
+  - 1 migration complète vers items table
+  - ~20 composants UI impliqués
+  - ~15 hooks/services utilisés
+
+  🎯 RECOMMANDATIONS
+
+  Critiques - À corriger rapidement
+
+  1. Séparer step_2 : stage → step_1, couple-details → step_2
+  2. Supprimer page_backup.tsx et planner obsolète
+  3. Standardiser data mapping entre hooks
+  4. Documenter lib/constants.ts
+
+  Améliorations - Optionnelles
+
+  1. Simplifier moodboard system si maintenance difficile
+  2. Ajouter tests pour validation flows
+  3. Optimiser bundle size des composants moodboard
+  4. Ajouter analytics pour tracking abandons
+
+  ---
+  CONCLUSION : Votre système d'onboarding est techniquement excellent avec
+   une architecture solide et des fonctionnalités innovantes. Le moodboard
+   IA est particulièrement impressionnant. Quelques corrections mineures
+  de cohérence suffisent pour le rendre parfait !

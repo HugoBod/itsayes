@@ -130,7 +130,7 @@ class AIService {
     if (rawData.step_2) {
       normalized.step_2 = {
         planning_stage: rawData.step_2.planning_stage,
-        wedding_location: rawData.step_2.wedding_location
+        wedding_location: rawData.step_1?.weddingLocation || rawData.step_2?.wedding_location
       }
     }
     
@@ -198,8 +198,9 @@ class AIService {
     }
 
     // Location and planning stage
-    if (data.step_2?.wedding_location) {
-      characteristics.push(`Location: ${data.step_2.wedding_location}`)
+    const location = data.step_1?.weddingLocation || data.step_2?.wedding_location
+    if (location) {
+      characteristics.push(`Location: ${location}`)
     }
 
     if (data.step_2?.planning_stage) {

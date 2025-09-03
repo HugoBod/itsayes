@@ -36,28 +36,59 @@ function prepareOnboardingTemplateData(
 ): OnboardingTemplateData {
   const { onboardingData, colorPalette, themes } = options
   
-  // Extract ceremony details from onboarding data
+  // Extract ceremony details from onboarding data (step_5)
   const ceremonyType = (onboardingData as any)?.step_5?.ceremonyType || 'outdoor'
   const religiousType = (onboardingData as any)?.step_5?.religiousType
   
-  // Extract colors from palette string
+  // Extract colors from palette string (step_4)
   const colors = colorPalette ? extractColorsFromPalette(colorPalette) : []
   
-  // Extract location from onboarding data
-  const location = (onboardingData as any)?.step_3?.venue || 
-                  (onboardingData as any)?.location || 
+  // Extract location from corrected onboarding data (step_1 after our correction)
+  const location = (onboardingData as any)?.step_1?.weddingLocation || 
+                  (onboardingData as any)?.step_2?.wedding_location || // fallback
                   photoConfig.environment
+  
+  // Extract budget info from step_2 for context
+  const budget = (onboardingData as any)?.step_2?.budgetValue || 50000
+  const guestCount = (onboardingData as any)?.step_3?.guestCount || 100
+  
+  // Extract actual themes from step_4
+  const actualThemes = themes || (onboardingData as any)?.step_4?.themes || []
+  const inspiration = (onboardingData as any)?.step_4?.inspiration || ''
+  
+  // Determine style context from budget and guest count
+  const isLuxuryBudget = budget > 75000
+  const isIntimateWedding = guestCount < 80
+  const isLargeWedding = guestCount > 200
+  
+  // Add context-aware themes
+  const contextualThemes = [...actualThemes]
+  if (isLuxuryBudget && !contextualThemes.includes('luxury')) {
+    contextualThemes.push('luxury')
+  }
+  if (isIntimateWedding && !contextualThemes.includes('intimate')) {
+    contextualThemes.push('intimate')
+  }
+  
+  console.log(`🎨 DEBUG: Enhanced onboarding data - Location: ${location}, Budget: ${budget}, Guests: ${guestCount}, Themes: ${contextualThemes.join(', ')}`)
   
   return {
     ceremonyType: ceremonyType as 'religious' | 'civil' | 'outdoor',
     religiousType: religiousType as 'Hindu' | 'Christian' | 'Jewish' | 'Muslim' | undefined,
     colorPalette: colorPalette || '',
     colors,
-    themes: themes || [],
-    style: photoConfig.style || '',
+    themes: contextualThemes,
+    style: photoConfig.subType || '',
     location: location || '',
     environment: photoConfig.environment || 'outdoor',
-    venue: photoConfig.venue
+    venue: location, // Use location as venue
+    // Additional context for better prompts
+    budget,
+    guestCount,
+    inspiration,
+    isLuxury: isLuxuryBudget,
+    isIntimate: isIntimateWedding,
+    isLarge: isLargeWedding
   }
 }
 
@@ -227,8 +258,12 @@ function addQualityTokens(
 ): string {
   const antiRepetitionTokens = generateAntiRepetitionTokens(photoConfig.category, variationSeed)
   const compositionGuidance = getCompositionGuidance(photoConfig.category)
+  const realismTokens = getRealism3Tokens()
   
   let enhanced = prompt
+
+  // Add realism tokens to combat AI-look
+  enhanced += ` ${realismTokens.join(', ')}.`
 
   // Add anti-repetition tokens
   if (antiRepetitionTokens.length > 0) {
@@ -241,6 +276,21 @@ function addQualityTokens(
   }
 
   return enhanced
+}
+
+/**
+ * Get tokens to make images look more realistic and less AI-generated
+ */
+function getRealism3Tokens(): string[] {
+  return [
+    'natural imperfections and asymmetry',
+    'real lighting with authentic shadows', 
+    'documentary photography style',
+    'candid moments between posed shots',
+    'genuine human emotions and expressions',
+    'realistic venue wear and natural aging',
+    'authentic wedding photographer perspective'
+  ]
 }
 
 /**

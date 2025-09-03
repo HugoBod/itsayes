@@ -75,6 +75,8 @@ export const ThreePhotoDisplay = memo(function ThreePhotoDisplay({
     return () => timers.forEach(clearTimeout)
   }, [])
 
+  const [isNavigating, setIsNavigating] = useState(false)
+
   const handleReplay = () => {
     // Reset animation
     setShowImages([false, false, false])
@@ -91,6 +93,13 @@ export const ThreePhotoDisplay = memo(function ThreePhotoDisplay({
       timers.push(setTimeout(() => setShowPalette(true), 2000))
       timers.push(setTimeout(() => setShowControls(true), 2500))
     }, 200)
+  }
+
+  const handleComplete = () => {
+    setIsNavigating(true)
+    if (onComplete) {
+      onComplete()
+    }
   }
 
   return (
@@ -211,13 +220,27 @@ export const ThreePhotoDisplay = memo(function ThreePhotoDisplay({
               {/* Continue Button */}
               {onComplete && (
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onComplete}
-                  className="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white text-sm rounded-full hover:bg-gray-800 transition-colors"
+                  whileHover={!isNavigating ? { scale: 1.05 } : {}}
+                  whileTap={!isNavigating ? { scale: 0.95 } : {}}
+                  onClick={handleComplete}
+                  disabled={isNavigating}
+                  className={`flex items-center gap-2 px-6 py-2 text-sm rounded-full transition-all duration-200 ${
+                    isNavigating 
+                      ? 'bg-gray-600 text-gray-300 cursor-wait' 
+                      : 'bg-gray-900 text-white hover:bg-gray-800'
+                  }`}
                 >
-                  <Icon name="home" className="h-4 w-4" />
-                  Continue to Dashboard
+                  {isNavigating ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-transparent rounded-full" />
+                      Navigating...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="home" className="h-4 w-4" />
+                      Continue to Dashboard
+                    </>
+                  )}
                 </motion.button>
               )}
 

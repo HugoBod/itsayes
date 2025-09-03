@@ -92,7 +92,15 @@ export function useOnboardingMoodboard(): UseOnboardingMoodboardReturn {
 
       console.log('🔍 DEBUG: Raw allSteps data:', JSON.stringify(allSteps, null, 2))
 
-      // Step 2: Couple details (names, date, budget, location) - ACTUAL DATA LOCATION
+      // Step 1: Wedding Stage & Location - SEPARATED DATA LOCATION
+      if (allSteps?.step_1) {
+        transformedData.weddingStage = {
+          stage: allSteps.step_1.stage || '',
+          location: allSteps.step_1.weddingLocation || ''
+        }
+      }
+
+      // Step 2: Couple details (names, date, budget) - ACTUAL DATA LOCATION
       if (allSteps?.step_2) {
         transformedData.coupleDetails = {
           partner1Name: allSteps.step_2.partner1Name || '',
@@ -101,11 +109,6 @@ export function useOnboardingMoodboard(): UseOnboardingMoodboardReturn {
           stillDeciding: allSteps.step_2.stillDeciding,
           budgetValue: allSteps.step_2.budgetValue || 0,
           currency: allSteps.step_2.currency || 'USD'
-        }
-        // Also extract wedding stage & location from step_2
-        transformedData.weddingStage = {
-          stage: allSteps.step_2.stage || '',
-          location: allSteps.step_2.weddingLocation || ''
         }
       }
 
@@ -169,6 +172,13 @@ export function useOnboardingMoodboard(): UseOnboardingMoodboardReturn {
   const completeOnboardingWithMigration = useCallback(async () => {
     try {
       console.log('🎯 Starting onboarding completion with migration...')
+      
+      // Check if already migrated to avoid duplicate work
+      const workspace = await onboardingService.getCurrentWorkspace()
+      if (workspace?.onboarding_completed_at) {
+        console.log('✅ Onboarding already completed, skipping migration')
+        return { success: true }
+      }
       
       // Call the migration service
       const result = await onboardingService.completeOnboarding()

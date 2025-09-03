@@ -171,6 +171,36 @@ class OnboardingDataService implements OnboardingService {
     }
   }
 
+  async getCurrentWorkspace(): Promise<any | null> {
+    try {
+      const workspaceId = await this.getWorkspaceId()
+      if (!workspaceId) {
+        return null
+      }
+
+      const supabase = createClientComponentClient()
+      const { data: workspace, error } = await supabase
+        .from('workspaces')
+        .select(`
+          id,
+          onboarding_completed_at,
+          onboarding_migrated_at
+        `)
+        .eq('id', workspaceId)
+        .single()
+
+      if (error || !workspace) {
+        console.error('Error fetching current workspace:', error)
+        return null
+      }
+
+      return workspace
+    } catch (error) {
+      console.error('Error in getCurrentWorkspace:', error)
+      return null
+    }
+  }
+
   async completeOnboarding(): Promise<{ success: boolean; error?: string }> {
     try {
       const workspaceId = await this.getWorkspaceId()
@@ -223,16 +253,16 @@ class OnboardingDataService implements OnboardingService {
       const onboardingData = workspace.onboarding_data_couple as OnboardingData
       const items = []
 
-      // Create Wedding Stage & Couple items from step 2 (ACTUAL DATA LOCATION)
-      const coupleDetails = onboardingData?.step_2 as any
-      if (coupleDetails?.stage || coupleDetails?.weddingLocation) {
+      // Create Wedding Stage items from step 1 (SEPARATED DATA LOCATION)
+      const stageData = onboardingData?.step_1 as any
+      if (stageData?.stage || stageData?.weddingLocation) {
         items.push({
           workspace_id: workspaceId,
           board_id: null,
           type: 'wedding_stage',
           data: {
-            planning_stage: coupleDetails.stage,
-            wedding_location: coupleDetails.weddingLocation,
+            planning_stage: stageData.stage,
+            wedding_location: stageData.weddingLocation,
             created_from_onboarding: true
           },
           title: 'Wedding Planning Stage',
@@ -241,6 +271,7 @@ class OnboardingDataService implements OnboardingService {
       }
 
       // Create Budget items from step 2 (couple details) - ACTUAL DATA LOCATION
+      const coupleDetails = onboardingData?.step_2 as any
       if (coupleDetails?.budgetValue && coupleDetails?.currency) {
         items.push({
           workspace_id: workspaceId,

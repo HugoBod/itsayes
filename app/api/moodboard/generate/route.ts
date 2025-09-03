@@ -43,8 +43,11 @@ async function generateThreePhotoMoodboard(
     
     // Debug: Log onboarding data received
     console.log('📋 DEBUG: Onboarding data received:', {
+      step_1: onboardingData.step_1 ? {
+        stage: onboardingData.step_1.stage,
+        weddingLocation: onboardingData.step_1.weddingLocation,
+      } : 'missing',
       step_2: onboardingData.step_2 ? {
-        wedding_location: onboardingData.step_2.wedding_location,
         partner1Name: onboardingData.step_2.partner1Name,
         partner2Name: onboardingData.step_2.partner2Name,
       } : 'missing',
@@ -65,12 +68,11 @@ async function generateThreePhotoMoodboard(
     let locationContext
     console.log('🌍 DEBUG: Location check:', {
       useLocationContext: options.useLocationContext,
-      wedding_location: onboardingData.step_2?.wedding_location,
-      weddingLocation: onboardingData.step_2?.weddingLocation,
-      step_2_exists: !!onboardingData.step_2
+      weddingLocation: onboardingData.step_1?.weddingLocation,
+      step_1_exists: !!onboardingData.step_1
     })
     
-    const weddingLocation = onboardingData.step_2?.wedding_location || onboardingData.step_2?.weddingLocation
+    const weddingLocation = onboardingData.step_1?.weddingLocation
     if (options.useLocationContext && weddingLocation) {
       try {
         locationContext = await locationContextService.getLocationContext(

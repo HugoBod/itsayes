@@ -33,7 +33,7 @@ export default function WeddingStageSelectionPage() {
   const [venueLocation, setVenueLocation] = useState('')
 
   const { handleBack, handleNext, isNavigating } = useCompleteOnboardingNavigation(
-    2,  // step number
+    1,  // step number (changed from 2 to 1)
     '/onboarding',  // prevPath (back button)
     '/onboarding/couple-details',  // nextPath (continue button)
     () => !!selectedStage && venueLocation.trim().length > 0,  // validateData

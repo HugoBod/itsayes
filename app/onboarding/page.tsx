@@ -12,10 +12,10 @@ export default function OnboardingPage() {
   const { handleBack, handleNext, isNavigating } = useCompleteOnboardingNavigation(
     1,  // step number
     '/',  // prevPath (back to landing)
-    selectedType === 'couples' ? '/onboarding/stage' : '/onboarding/planners',  // nextPath
-    () => !!selectedType,  // validateData
+    '/onboarding/stage',  // nextPath (couples only for now)
+    () => selectedType === 'couples',  // validateData (only couples supported)
     () => {  // getStepData
-      if (selectedType) {
+      if (selectedType === 'couples') {
         return { user_type: selectedType }
       }
       return {}
@@ -59,16 +59,12 @@ export default function OnboardingPage() {
 
         <Button 
           size="lg"
-          variant={selectedType === 'planners' ? 'default' : 'outline'}
-          className={`w-full h-12 text-base sm:text-lg font-semibold transition-all duration-200 border-2 justify-start ${
-            selectedType === 'planners' 
-              ? 'bg-primary hover:bg-primary-dark border-primary text-white shadow-primary' 
-              : 'border-border hover:border-primary hover:bg-muted hover:text-primary bg-card text-foreground'
-          } shadow-lg hover:shadow-xl hover:-translate-y-0.5`}
-          onClick={() => handleUserTypeSelection('planners')}
+          variant="outline"
+          disabled={true}
+          className="w-full h-12 text-base sm:text-lg font-semibold transition-all duration-200 border-2 justify-start border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed shadow-lg"
         >
           <Icon name="briefcase" className="mr-2 sm:mr-3 h-5 w-5 sm:h-6 sm:w-6" />
-          I am a Wedding Planner
+          I am a Wedding Planner (Coming Soon)
         </Button>
       </div>
     </OnboardingLayout>
