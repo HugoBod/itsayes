@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { MoodboardWidget } from '@/components/moodboard/MoodboardWidget'
+import { ThreePhotoDisplay } from '@/components/moodboard/ThreePhotoDisplay'
 import { Icon } from '@/components/ui/icons'
 import { Logo } from '@/components/ui/logo'
 import { useOnboardingMoodboard } from '@/hooks/useOnboardingMoodboard'
@@ -155,13 +155,14 @@ export default function SummaryPage() {
     onboardingDataKeys: Object.keys(onboardingData || {})
   })
 
-  // Main cinematic moodboard experience
-  if (moodboard && isReady) {
-    console.log('✅ Showing cinematic moodboard')
+  // Main cinematic 3-photo display
+  if (moodboard && isReady && moodboard.source_images) {
+    console.log('✅ Showing 3-photo display')
     return (
-      <MoodboardWidget
-        moodboard={moodboard}
+      <ThreePhotoDisplay
+        sourceImages={moodboard.source_images}
         onboardingData={onboardingData}
+        moodboard={moodboard}
         onComplete={handleCompleteWithMigration}
       />
     )

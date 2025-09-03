@@ -1,5 +1,8 @@
 // Import only essential icons to reduce bundle size and compilation time
-import {
+import type { LucideIcon } from 'lucide-react'
+import * as Icons from 'lucide-react'
+
+const {
   AlertCircle,
   AlertTriangle,
   ArrowRight,
@@ -30,10 +33,6 @@ import {
   Search,
   ArrowDown,
   RotateCcw,
-  Twitter,
-  Facebook,
-  Instagram,
-  Linkedin,
   Briefcase,
   Sparkles,
   Circle,
@@ -51,8 +50,7 @@ import {
   Palette,
   Lightbulb,
   Share,
-  type LucideIcon,
-} from 'lucide-react'
+} = Icons
 
 export const iconRegistry = {
   // Essential icons only
@@ -90,10 +88,6 @@ export const iconRegistry = {
   search: Search,
   arrowDown: ArrowDown,
   refresh: RotateCcw,
-  twitter: Twitter,
-  facebook: Facebook,
-  instagram: Instagram,
-  linkedin: Linkedin,
   briefcase: Briefcase,
   sparkles: Sparkles,
   circle: Circle,

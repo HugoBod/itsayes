@@ -258,17 +258,17 @@ export const WEDDING_CATEGORIES: Record<string, CategoryConfig> = {
   },
 
   'couple_entrance': {
-    name: 'Couple Entrance', 
+    name: 'Ceremony Aisle', 
     subcategories: [
-      'floral install doorway',
-      'arch doorway',
-      'draped curtain doorway',
-      'lantern aisle path',
-      'sparkler style path',
-      'LED tunnel path',
-      'vintage car vehicle',
-      'boat vehicle',
-      'golf cart vehicle'
+      'white fabric aisle runner',
+      'rose petal pathway',
+      'floating candle aisle',
+      'floral arch at altar',
+      'greenery aisle decor',
+      'vintage lantern pathway',
+      'wooden cross-back chairs',
+      'ghost chairs styling',
+      'mixed vintage seating'
     ],
     visibility: {
       flowers: 'optional',

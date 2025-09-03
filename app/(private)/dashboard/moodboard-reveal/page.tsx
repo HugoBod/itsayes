@@ -49,13 +49,7 @@ export default function MoodboardRevealPage() {
   useEffect(() => {
     if (!isGenerating) return
 
-    const messages = [
-      "✨ Analyzing your style preferences",
-      "🎨 Crafting your color palette", 
-      "💝 Incorporating your special wishes",
-      "🏰 Designing your perfect venue vibe",
-      "✨ Adding final magical touches"
-    ]
+    const messages: string[] = []
 
     let currentIndex = 0
     const interval = setInterval(() => {

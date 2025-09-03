@@ -154,7 +154,12 @@ export function useOnboardingMoodboard(): UseOnboardingMoodboardReturn {
   // Generate moodboard wrapper
   const generateMoodboard = useCallback(async () => {
     try {
-      await moodboardActions.generateMoodboard()
+      // Force the new 3-photo system with the new categorized prompts
+      await moodboardActions.generateMoodboard({
+        generationType: '3-photo',
+        layoutType: 'grid-3x1',
+        useLocationContext: true
+      })
     } catch (error) {
       console.error('Error generating moodboard:', error)
     }

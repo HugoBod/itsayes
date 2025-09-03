@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 import { locationContextService, LocationContext } from './location-context-service'
-import { generatePromptsWithLocation, generateBatchPrompts } from './moodboard-prompts'
+import { generatePromptsWithLocation, generateBatchPrompts, generateBatchPromptsWithOnboarding } from './moodboard-prompts'
 import type { OnboardingData } from './ai-service'
 import type { PhotoConfiguration } from './moodboard-categories'
 
@@ -465,10 +465,11 @@ Focus on the dining experience, celebration atmosphere, and guest enjoyment.`
     try {
       console.log('🎨 Starting categorized photo generation for 3 photos')
       
-      // Generate intelligent prompts for all photos
+      // Generate intelligent prompts for all photos  
+      console.log('🎨 DEBUG: Generating prompts with onboarding data')
       const generatedPrompts = locationContext
         ? generatePromptsWithLocation(photoConfigs, locationContext, onboardingData)
-        : generateBatchPrompts(photoConfigs)
+        : generateBatchPromptsWithOnboarding(photoConfigs, onboardingData)
       
       // Create requests for each photo
       const photoRequests: CategorizedPhotoRequest[] = photoConfigs.map((config, index) => ({
@@ -567,7 +568,7 @@ Focus on the dining experience, celebration atmosphere, and guest enjoyment.`
           n: 1,
         }),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Individual photo timeout')), 15000)
+          setTimeout(() => reject(new Error('Individual photo timeout')), 30000)
         )
       ])
 

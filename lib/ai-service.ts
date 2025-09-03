@@ -13,37 +13,56 @@ interface OnboardingData {
     user_type: string
   }
   step_2?: {
-    planning_stage: string
-    wedding_location: string
+    planning_stage?: string
+    wedding_location?: string
+    weddingLocation?: string  // Alternative field name
+    partner1Name?: string
+    partner2Name?: string
+    weddingDate?: string
+    stage?: string
+    budgetValue?: number
+    currency?: string
   }
   step_3?: {
-    partner1_name: string
-    partner2_name: string
-    wedding_date: string
-    currency: string
-    budget: number
+    partner1_name?: string
+    partner2_name?: string
+    wedding_date?: string
+    currency?: string
+    budget?: number
+    guestCount?: number
+    internationalGuests?: string
+    specialRequirements?: any
   }
   step_4?: {
-    guest_count: number
-    international_guests: string
+    // Wedding style data (themes and colors are here!)
+    themes?: string | string[]
+    colorPalette?: string
+    selectedColorPalette?: string
+    inspiration?: string
+    guest_count?: number  // Sometimes guest info is here too
+    international_guests?: string
     requirements?: string[]
     guests_notes?: string
-    special_requirements_notes?: string  // Free text from user
+    special_requirements_notes?: string
   }
   step_5?: {
-    themes: string | string[]  // Can be array or single theme
-    color_palette: string
+    // Experience and ceremony data
+    ceremonyType?: string
+    experiences?: string[]
+    specialWishes?: string
+    themes?: string | string[]  // Backup location
+    color_palette?: string  // Backup location
     inspiration_refs?: string
-    inspiration?: string  // Free text inspiration from user
+    inspiration?: string
   }
   step_6?: {
-    ceremony_type: string
+    ceremony_type?: string
     religion?: string
     traditions?: string
     special_elements?: string
-    experiences?: string[]  // Array of selected experiences
-    other_experience?: string  // Custom experience description
-    special_wishes?: string  // Free text special wishes from user
+    experiences?: string[]
+    other_experience?: string
+    special_wishes?: string
   }
 }
 

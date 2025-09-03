@@ -38,7 +38,7 @@ export function pick<T>(choices: WeightedChoice<T>[] | T[], seed?: number): T {
   }
 
   // Handle simple array (equal weights)
-  if (typeof choices[0] === 'string' || !('value' in choices[0])) {
+  if (typeof choices[0] === 'string' || (typeof choices[0] === 'object' && !('value' in (choices[0] as any)))) {
     const index = Math.floor(random * choices.length)
     return choices[index] as T
   }
@@ -202,36 +202,80 @@ function selectHelpers(
  * Extract color palette from onboarding data
  */
 function extractColorPalette(onboardingData: OnboardingData): string {
-  // Try step_5 first (current structure)
+  console.log(`🎨 DEBUG: Full onboarding data structure:`, JSON.stringify(onboardingData, null, 2))
+  
+  // Try step_4 first (where color palette is actually stored according to useOnboardingMoodboard.ts)
+  if (onboardingData.step_4?.colorPalette) {
+    console.log(`🎨 DEBUG: Found colorPalette in step_4: "${onboardingData.step_4.colorPalette}"`)
+    return onboardingData.step_4.colorPalette
+  }
+  
+  if (onboardingData.step_4?.selectedColorPalette) {
+    console.log(`🎨 DEBUG: Found selectedColorPalette in step_4: "${onboardingData.step_4.selectedColorPalette}"`)
+    return onboardingData.step_4.selectedColorPalette
+  }
+  
+  // Try step_5 for backward compatibility (according to ai-service.ts interface)
   if (onboardingData.step_5?.color_palette) {
+    console.log(`🎨 DEBUG: Found color_palette in step_5: "${onboardingData.step_5.color_palette}"`)
     return onboardingData.step_5.color_palette
   }
   
-  // Try alternative field names
-  if (onboardingData.step_5?.themes) {
-    const themes = Array.isArray(onboardingData.step_5.themes) 
-      ? onboardingData.step_5.themes.join(' ') 
-      : onboardingData.step_5.themes
+  // Try inferring from themes in step_4
+  if (onboardingData.step_4?.themes) {
+    const themes = Array.isArray(onboardingData.step_4.themes) 
+      ? onboardingData.step_4.themes.join(' ') 
+      : onboardingData.step_4.themes
+    
+    console.log(`🎨 DEBUG: Inferring colors from step_4 themes: "${themes}"`)
     
     // Infer colors from themes
     const themeColors = {
-      rustic: 'warm earth tones with sage green',
-      modern: 'clean whites with metallic accents',
-      romantic: 'soft pastels with blush pink',
-      classic: 'elegant ivory and gold',
-      bohemian: 'rich jewel tones with brass',
-      garden: 'natural greens with white florals',
-      vintage: 'dusty rose with antique gold'
+      rustic: 'Sage & Cream',
+      modern: 'Classic White',
+      romantic: 'Blush & Gold',
+      classic: 'Navy & Rose',
+      bohemian: 'Terracotta & Cream',
+      garden: 'Sage & Cream',
+      vintage: 'Dusty Blue'
     }
     
     for (const [theme, colors] of Object.entries(themeColors)) {
       if (themes.toLowerCase().includes(theme)) {
+        console.log(`🎨 DEBUG: Theme "${theme}" mapped to palette "${colors}"`)
         return colors
       }
     }
   }
   
-  return 'elegant ivory and gold'
+  // Try inferring from themes in step_5 as fallback
+  if (onboardingData.step_5?.themes) {
+    const themes = Array.isArray(onboardingData.step_5.themes) 
+      ? onboardingData.step_5.themes.join(' ') 
+      : onboardingData.step_5.themes
+    
+    console.log(`🎨 DEBUG: Inferring colors from step_5 themes: "${themes}"`)
+    
+    const themeColors = {
+      rustic: 'Sage & Cream',
+      modern: 'Classic White',
+      romantic: 'Blush & Gold',
+      classic: 'Navy & Rose',
+      bohemian: 'Terracotta & Cream',
+      garden: 'Sage & Cream',
+      vintage: 'Dusty Blue'
+    }
+    
+    for (const [theme, colors] of Object.entries(themeColors)) {
+      if (themes.toLowerCase().includes(theme)) {
+        console.log(`🎨 DEBUG: Theme "${theme}" mapped to palette "${colors}"`)
+        return colors
+      }
+    }
+  }
+  
+  console.log('🎨 DEBUG: No palette found anywhere, using fallback: "Blush & Gold"')
+  return 'Blush & Gold'
 }
 
 /**

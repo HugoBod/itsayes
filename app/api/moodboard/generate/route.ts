@@ -41,6 +41,20 @@ async function generateThreePhotoMoodboard(
   try {
     console.log('🎲 Step 1: Generating randomized photo configurations')
     
+    // Debug: Log onboarding data received
+    console.log('📋 DEBUG: Onboarding data received:', {
+      step_2: onboardingData.step_2 ? {
+        wedding_location: onboardingData.step_2.wedding_location,
+        partner1Name: onboardingData.step_2.partner1Name,
+        partner2Name: onboardingData.step_2.partner2Name,
+      } : 'missing',
+      step_4: onboardingData.step_4 ? {
+        colorPalette: onboardingData.step_4.colorPalette,
+        selectedColorPalette: onboardingData.step_4.selectedColorPalette,
+        themes: onboardingData.step_4.themes,
+      } : 'missing'
+    })
+    
     // Generate 3 photo configurations with randomization
     const randomizationResult = buildScene(onboardingData, options.seed)
     
@@ -49,15 +63,25 @@ async function generateThreePhotoMoodboard(
     
     // Get location context if requested
     let locationContext
-    if (options.useLocationContext && onboardingData.step_2?.wedding_location) {
+    console.log('🌍 DEBUG: Location check:', {
+      useLocationContext: options.useLocationContext,
+      wedding_location: onboardingData.step_2?.wedding_location,
+      weddingLocation: onboardingData.step_2?.weddingLocation,
+      step_2_exists: !!onboardingData.step_2
+    })
+    
+    const weddingLocation = onboardingData.step_2?.wedding_location || onboardingData.step_2?.weddingLocation
+    if (options.useLocationContext && weddingLocation) {
       try {
         locationContext = await locationContextService.getLocationContext(
-          onboardingData.step_2.wedding_location
+          weddingLocation
         )
         console.log(`🌍 Location context: ${locationContext.name}`)
       } catch (error) {
         console.warn('⚠️ Location context failed:', error)
       }
+    } else {
+      console.log('⚠️ Location context skipped - missing data or disabled')
     }
     
     console.log('🖼️ Step 2: Generating 3 categorized photos')
@@ -372,8 +396,8 @@ export async function POST(request: NextRequest) {
 
     // Parse query parameters for generation options
     const url = new URL(request.url)
-    const layoutType = (url.searchParams.get('layout') as 'grid-3x1' | 'l-shape' | 'diagonal' | 'grid' | 'collage' | 'magazine') || 'magazine'
-    const generationType = (url.searchParams.get('type') as 'single' | 'multi-image' | '3-photo') || 'multi-image'
+    const layoutType = (url.searchParams.get('layout') as 'grid-3x1' | 'l-shape' | 'diagonal' | 'grid' | 'collage' | 'magazine') || 'grid-3x1'
+    const generationType = (url.searchParams.get('type') as 'single' | 'multi-image' | '3-photo') || '3-photo'
     const useLocationContext = url.searchParams.get('location') !== 'false'
     const seedParam = url.searchParams.get('seed')
     const skipSwapping = url.searchParams.get('skipSwapping') === 'true'

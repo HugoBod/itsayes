@@ -1,15 +1,19 @@
 // Intelligent Prompt Generation for Moodboard Categories
 // Template system with smart field merging and location context integration
 
-import { PROMPT_TEMPLATES } from './moodboard-config'
+import { PROMPT_TEMPLATES, extractColorsFromPalette } from './moodboard-config'
 import type { PhotoConfiguration } from './moodboard-categories'
 import type { LocationContext } from './location-context-service'
 import type { OnboardingData } from './ai-service'
+import type { OnboardingTemplateData } from './types/onboarding-template'
 
 export interface PromptGenerationOptions {
   locationContext?: LocationContext
   qualityEnhancements?: boolean
   variationSeed?: number
+  colorPalette?: string
+  themes?: string[]
+  onboardingData?: OnboardingData
 }
 
 export interface GeneratedPrompt {
@@ -20,6 +24,40 @@ export interface GeneratedPrompt {
     elementsIncluded: string[]
     locationEnhanced: boolean
     qualityTokens: string[]
+  }
+}
+
+/**
+ * Prepare OnboardingTemplateData from PhotoConfiguration and options
+ */
+function prepareOnboardingTemplateData(
+  photoConfig: PhotoConfiguration,
+  options: PromptGenerationOptions
+): OnboardingTemplateData {
+  const { onboardingData, colorPalette, themes } = options
+  
+  // Extract ceremony details from onboarding data
+  const ceremonyType = (onboardingData as any)?.step_5?.ceremonyType || 'outdoor'
+  const religiousType = (onboardingData as any)?.step_5?.religiousType
+  
+  // Extract colors from palette string
+  const colors = colorPalette ? extractColorsFromPalette(colorPalette) : []
+  
+  // Extract location from onboarding data
+  const location = (onboardingData as any)?.step_3?.venue || 
+                  (onboardingData as any)?.location || 
+                  photoConfig.environment
+  
+  return {
+    ceremonyType: ceremonyType as 'religious' | 'civil' | 'outdoor',
+    religiousType: religiousType as 'Hindu' | 'Christian' | 'Jewish' | 'Muslim' | undefined,
+    colorPalette: colorPalette || '',
+    colors,
+    themes: themes || [],
+    style: photoConfig.style || '',
+    location: location || '',
+    environment: photoConfig.environment || 'outdoor',
+    venue: photoConfig.venue
   }
 }
 
@@ -38,19 +76,23 @@ export function generatePrompt(
     throw new Error(`No template found for category: ${photoConfig.category}`)
   }
 
-  // Prepare template data with all configuration
-  const templateData = {
-    ...photoConfig,
-    ...photoConfig.elements,
-    ...photoConfig.helpers
-  }
+  // Prepare OnboardingTemplateData for dynamic templates
+  const onboardingTemplateData: OnboardingTemplateData = prepareOnboardingTemplateData(
+    photoConfig, 
+    options
+  )
 
-  // Generate base prompt
-  let prompt = templateFn(templateData)
+  // Generate base prompt with dynamic template
+  let prompt = templateFn(onboardingTemplateData)
 
   // Enhance with location context if available
   if (locationContext) {
     prompt = enhanceWithLocationContext(prompt, photoConfig, locationContext)
+  }
+
+  // Enhance with color palette if available
+  if (options.colorPalette) {
+    prompt = enhanceWithColorPalette(prompt, photoConfig, options.colorPalette)
   }
 
   // Add quality enhancements and anti-repetition tokens
@@ -75,6 +117,67 @@ export function generatePrompt(
       qualityTokens
     }
   }
+}
+
+/**
+ * Enhance prompt with color palette context
+ */
+function enhanceWithColorPalette(
+  basePrompt: string,
+  photoConfig: PhotoConfiguration,
+  colorPalette: string
+): string {
+  console.log(`🎨 Adding color palette "${colorPalette}" to ${photoConfig.category} prompt`)
+  
+  // Map color palette names to descriptive colors
+  const colorMappings: Record<string, string[]> = {
+    'Sage & Cream': ['soft sage green', 'warm cream', 'muted earthy tones'],
+    'Blush & Gold': ['dusty rose', 'champagne gold', 'warm blush tones'],
+    'Navy & White': ['deep navy blue', 'crisp white', 'classic nautical colors'],
+    'Navy & Rose': ['deep navy blue', 'dusty rose', 'elegant contrasting tones'],
+    'Burgundy & Ivory': ['rich burgundy', 'soft ivory', 'elegant wine tones'],
+    'Dusty Blue & Mauve': ['dusty blue', 'gentle mauve', 'soft romantic hues'],
+    'Forest Green & Gold': ['deep forest green', 'antique gold', 'rich natural tones'],
+    'Terracotta & Sage': ['warm terracotta', 'muted sage', 'earthy desert tones'],
+    'Lavender & Silver': ['soft lavender', 'charcoal gray', 'serene pastel tones']
+  }
+  
+  const colors = colorMappings[colorPalette] || [colorPalette.toLowerCase()]
+  // Use random color from palette instead of all colors
+  const randomColor = colors[Math.floor(Math.random() * colors.length)]
+  const colorDescription = randomColor
+  
+  console.log(`🎨 DEBUG: Available colors for ${colorPalette}:`, colors)
+  console.log(`🎨 DEBUG: Selected random color: "${randomColor}"`)
+  
+  // Add color context to the prompt based on category
+  const categoryColorIntegration: Record<string, string> = {
+    'ceremony': `featuring ${colorDescription} ceremony decor`,
+    'reception_ballroom': `with ${colorDescription} styling throughout`,
+    'reception_table': `incorporating ${colorDescription} in table settings and linens`,
+    'wedding_cake': `with ${colorDescription} decorative accents`,
+    'decorative_details': `showcasing ${colorDescription} color scheme`,
+    'couple_entrance': `decorated with ${colorDescription} aisle styling`,
+    'photo_booth': `styled with ${colorDescription} design elements`
+  }
+  
+  const colorIntegration = categoryColorIntegration[photoConfig.category] || `with ${colorDescription} accents`
+  
+  // Insert color context naturally into the prompt - updated for simplified templates
+  const enhanced = basePrompt.replace(
+    /captured in/,
+    `${colorIntegration}, captured in`
+  ).replace(
+    /shot in/,
+    `${colorIntegration}, shot in`
+  ).replace(
+    /photographed in/,
+    `${colorIntegration}, photographed in`
+  )
+  
+  const finalPrompt = enhanced !== basePrompt ? enhanced : `${basePrompt.slice(0, -1)}, ${colorIntegration}.`
+  console.log(`🎨 DEBUG: Final enhanced prompt: "${finalPrompt}"`)
+  return finalPrompt
 }
 
 /**
@@ -280,6 +383,28 @@ export function generateBatchPrompts(
 }
 
 /**
+ * Generate prompts with onboarding data integration (colors, themes)
+ */
+export function generateBatchPromptsWithOnboarding(
+  photoConfigs: PhotoConfiguration[],
+  onboardingData: OnboardingData
+): GeneratedPrompt[] {
+  // Extract color palette and themes from onboarding data - matching simulation structure
+  const colorPalette = (onboardingData as any).step_4?.colorPalette || (onboardingData as any).step_4?.selectedColorPalette || (onboardingData as any).step_5?.color_palette
+  const themes = (onboardingData as any).step_4?.themes || (onboardingData as any).step_5?.themes
+  
+  console.log('🎨 DEBUG: Using onboarding colors and themes:', { colorPalette, themes })
+  
+  return generateBatchPrompts(photoConfigs, {
+    qualityEnhancements: true,
+    variationSeed: generateVariationSeed(onboardingData),
+    colorPalette,
+    themes,
+    onboardingData
+  })
+}
+
+/**
  * Generate prompts with location context integration
  */
 export function generatePromptsWithLocation(
@@ -287,10 +412,19 @@ export function generatePromptsWithLocation(
   locationContext: LocationContext,
   onboardingData: OnboardingData
 ): GeneratedPrompt[] {
+  // Extract color palette and themes from onboarding data - same as generateBatchPromptsWithOnboarding
+  const colorPalette = (onboardingData as any).step_4?.colorPalette || (onboardingData as any).step_4?.selectedColorPalette || (onboardingData as any).step_5?.color_palette
+  const themes = (onboardingData as any).step_4?.themes || (onboardingData as any).step_5?.themes
+  
+  console.log('🎨 DEBUG: generatePromptsWithLocation using colors and themes:', { colorPalette, themes })
+  
   return generateBatchPrompts(photoConfigs, {
     locationContext,
     qualityEnhancements: true,
-    variationSeed: generateVariationSeed(onboardingData)
+    variationSeed: generateVariationSeed(onboardingData),
+    colorPalette,
+    themes,
+    onboardingData
   })
 }
 

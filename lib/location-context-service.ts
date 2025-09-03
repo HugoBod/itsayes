@@ -22,6 +22,7 @@ class LocationContextService {
   private cache = new Map<string, CacheEntry>()
   private readonly CACHE_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days
   
+  
   /**
    * Normalizes location string for consistent caching
    */
@@ -106,37 +107,272 @@ class LocationContextService {
   }
 
   /**
-   * Uses WebFetch to get venue-specific information
+   * Uses internet search and web scraping to get real venue information
    */
   private async fetchVenueContext(location: string): Promise<Partial<LocationContext>> {
+    console.log(`🔍 Searching internet for wedding venue information: ${location}`)
+    
     try {
-      // Search for wedding venues in the location
-      const venueQuery = `${location} wedding venues architecture style characteristics`
+      // First try Wikipedia for basic context
+      const wikiResult = await this.fetchFromWikipediaPlaces(location)
       
-      // Try to fetch from a wedding-focused site
-      const weddingWireUrl = `https://www.weddingwire.com/wedding-venues/${encodeURIComponent(location.toLowerCase())}`
+      // Then search the web for wedding-specific information
+      const webResult = await this.searchWeddingVenues(location)
       
-      const venueData = await WebFetch.fetch(weddingWireUrl, 
-        `Extract architectural styles, popular venue types, and local wedding characteristics for ${location}. Focus on:
-        - Architectural styles (Gothic, Modern, Colonial, etc.)
-        - Popular venue types (Châteaux, Beaches, Gardens, etc.) 
-        - Local cultural elements
-        - Climate considerations
-        Return in structured format.`)
+      // Combine both sources
+      const combined = {
+        architecture_style: webResult.architecture_style || wikiResult.architecture_style || 'Contemporary elegance',
+        popular_venues: webResult.popular_venues || wikiResult.popular_venues || ['Modern venues'],
+        cultural_elements: [...(webResult.cultural_elements || []), ...(wikiResult.cultural_elements || [])].slice(0, 4),
+        climate: webResult.climate || wikiResult.climate || 'seasonal',
+        description: wikiResult.description || `${location} offers beautiful wedding opportunities.`,
+        search_keywords: [location, ...(webResult.popular_venues || []).slice(0, 2)].filter(Boolean)
+      }
       
-      // Parse the response to extract structured data
-      const architectureMatch = venueData.match(/architectural?\s*style[s]?[:\-]\s*([^.\n]+)/i)
-      const venuesMatch = venueData.match(/popular\s*venue[s]?[:\-]\s*([^.\n]+)/i)
-      const cultureMatch = venueData.match(/cultural?\s*element[s]?[:\-]\s*([^.\n]+)/i)
+      console.log(`✅ Successfully gathered context from internet for ${location}`)
+      return combined
+      
+    } catch (error) {
+      console.error(`❌ Failed to fetch venue data for ${location}:`, error)
+      throw new Error(`Could not find wedding information for ${location}. Please check the location name.`)
+    }
+  }
+
+  /**
+   * Search the web specifically for wedding venue information
+   */
+  private async searchWeddingVenues(location: string): Promise<Partial<LocationContext>> {
+    try {
+      // Use WebSearch to find wedding venue information
+      const searchQuery = `${location} wedding venues architectural style popular venue types`
+      console.log(`🔍 Web searching: ${searchQuery}`)
+      
+      const searchResult = await WebSearch.search(searchQuery)
+      
+      if (!searchResult.success || !searchResult.results) {
+        throw new Error('Web search failed')
+      }
+      
+      const searchResults = searchResult.results
+      
+      // Extract wedding venue information from search results
+      let combinedContent = ''
+      if (searchResults.length > 0) {
+        for (const result of searchResults.slice(0, 3)) { // Use top 3 results
+          try {
+            const pageContent = await WebFetch.fetch(result.url, 
+              `Extract wedding venue information for ${location}. Focus on:
+              - Specific architectural styles popular for weddings
+              - Types of wedding venues (gardens, ballrooms, etc.)
+              - Cultural elements that influence local weddings
+              - Climate and seasonal considerations
+              Return structured information.`)
+            combinedContent += pageContent + '\n'
+          } catch (fetchError) {
+            console.warn(`Failed to fetch ${result.url}:`, fetchError)
+            continue
+          }
+        }
+      }
+      
+      if (!combinedContent) {
+        throw new Error('No web content retrieved')
+      }
+      
+      // Parse the combined content
+      return this.parseWeddingVenueContent(combinedContent, location)
+      
+    } catch (error) {
+      console.warn(`Web search failed for ${location}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Parse wedding venue content from web search results
+   */
+  private parseWeddingVenueContent(content: string, location: string): Partial<LocationContext> {
+    const lowerContent = content.toLowerCase()
+    
+    // Extract architecture styles
+    const architectureKeywords = [
+      'victorian', 'art deco', 'colonial', 'modern', 'contemporary', 'historic', 
+      'gothic', 'baroque', 'mediterranean', 'rustic', 'industrial', 'classical'
+    ]
+    const foundArchStyles = architectureKeywords.filter(style => lowerContent.includes(style))
+    const architecture_style = foundArchStyles.length > 0 
+      ? `${foundArchStyles.slice(0, 2).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' and ')} architecture`
+      : 'Contemporary elegance'
+    
+    // Extract venue types
+    const venueKeywords = [
+      'garden', 'ballroom', 'beach', 'rooftop', 'vineyard', 'castle', 'mansion', 
+      'loft', 'barn', 'hotel', 'resort', 'museum', 'gallery', 'estate'
+    ]
+    const foundVenues = venueKeywords.filter(venue => lowerContent.includes(venue))
+    const popular_venues = foundVenues.length > 0 
+      ? foundVenues.slice(0, 4).map(v => `${v.charAt(0).toUpperCase() + v.slice(1)} venues`)
+      : ['Traditional venues']
+    
+    // Extract cultural elements
+    const culturalKeywords = [
+      'wine', 'culinary', 'artistic', 'historic', 'tradition', 'heritage', 
+      'local', 'regional', 'cultural', 'sophisticated', 'elegant'
+    ]
+    const foundCultural = culturalKeywords.filter(culture => lowerContent.includes(culture))
+    const cultural_elements = foundCultural.length > 0 
+      ? foundCultural.slice(0, 3).map(c => `${c.charAt(0).toUpperCase() + c.slice(1)} traditions`)
+      : ['Local traditions']
+    
+    // Determine climate
+    let climate = 'seasonal'
+    if (lowerContent.includes('tropical') || lowerContent.includes('humid')) climate = 'tropical'
+    else if (lowerContent.includes('mediterranean') || lowerContent.includes('dry')) climate = 'mediterranean'
+    else if (lowerContent.includes('temperate') || lowerContent.includes('four season')) climate = 'temperate'
+    
+    return {
+      architecture_style,
+      popular_venues,
+      cultural_elements,
+      climate
+    }
+  }
+
+  /**
+   * Fetch context from Wikipedia Places API (more reliable)
+   */
+  private async fetchFromWikipediaPlaces(location: string): Promise<Partial<LocationContext>> {
+    try {
+      // Search for the location page
+      const searchUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(location)}`
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'Wedding-Planning-App/1.0',
+          'Accept': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Wikipedia API error: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      // Extract relevant information from the description
+      const description = data.extract || ''
+      const title = data.title || location
+      
+      // Parse architectural and cultural elements from the description
+      const context = this.parseLocationDescription(description)
       
       return {
-        architecture_style: architectureMatch?.[1]?.trim() || 'Classic elegance',
-        popular_venues: venuesMatch?.[1]?.split(',').map(v => v.trim()) || ['Traditional venues'],
-        cultural_elements: cultureMatch?.[1]?.split(',').map(c => c.trim()) || ['Local traditions']
+        ...context,
+        description: description || `${location} offers unique wedding opportunities.`,
+        search_keywords: [location, title, ...context.popular_venues?.slice(0, 2) || []].filter(Boolean)
       }
     } catch (error) {
-      console.warn(`Failed to fetch venue data for ${location}:`, error)
-      return this.getFallbackVenueData(location)
+      console.warn(`Wikipedia Places API failed for ${location}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Try multiple web sources with WebFetch
+   */
+  private async fetchFromMultipleSources(location: string): Promise<Partial<LocationContext>> {
+    const sources = [
+      `https://www.theknot.com/wedding-venues/${encodeURIComponent(location.toLowerCase().replace(/\s+/g, '-'))}`,
+      `https://www.weddingwire.com/wedding-venues/${encodeURIComponent(location.toLowerCase())}`
+    ]
+    
+    for (const url of sources) {
+      try {
+        const venueData = await WebFetch.fetch(url, 
+          `Extract wedding venue information for ${location}. Focus on:
+          - Main architectural styles (be specific, e.g. "Victorian mansions" not "classic")
+          - 3-4 popular venue types 
+          - Local cultural elements that influence weddings
+          - Climate/seasonal considerations
+          Format as: Architecture: X. Venues: A, B, C. Culture: D, E.`)
+        
+        const parsed = this.parseVenueWebData(venueData)
+        if (parsed.architecture_style && parsed.architecture_style !== 'Classic elegance') {
+          return parsed
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch from ${url}:`, error instanceof Error ? error.message : String(error))
+        continue
+      }
+    }
+    
+    throw new Error('All web sources failed')
+  }
+
+  /**
+   * Parse location description to extract wedding-relevant context
+   */
+  private parseLocationDescription(description: string): Partial<LocationContext> {
+    const desc = description.toLowerCase()
+    
+    // Architecture detection
+    let architecture_style = 'Classic elegance'
+    if (desc.includes('art deco')) architecture_style = 'Art Deco elegance and modern sophistication'
+    else if (desc.includes('victorian')) architecture_style = 'Victorian grandeur and historic charm'
+    else if (desc.includes('colonial')) architecture_style = 'Colonial architecture and traditional elegance'
+    else if (desc.includes('gothic')) architecture_style = 'Gothic cathedrals and medieval charm'
+    else if (desc.includes('modern')) architecture_style = 'Contemporary design and modern sophistication'
+    else if (desc.includes('baroque')) architecture_style = 'Baroque opulence and classical beauty'
+    
+    // Venue types based on description
+    const popular_venues = []
+    if (desc.includes('beach') || desc.includes('coast')) popular_venues.push('Beachfront venues')
+    if (desc.includes('mountain') || desc.includes('hill')) popular_venues.push('Mountain venues')
+    if (desc.includes('garden') || desc.includes('park')) popular_venues.push('Garden venues')
+    if (desc.includes('castle') || desc.includes('palace')) popular_venues.push('Historic castles')
+    if (desc.includes('museum') || desc.includes('gallery')) popular_venues.push('Cultural venues')
+    if (desc.includes('hotel') || desc.includes('resort')) popular_venues.push('Luxury hotels')
+    
+    // Default venues if none detected
+    if (popular_venues.length === 0) {
+      popular_venues.push('Traditional venues', 'Historic locations')
+    }
+    
+    // Cultural elements
+    const cultural_elements = ['Local traditions']
+    if (desc.includes('wine') || desc.includes('vineyard')) cultural_elements.push('Wine culture')
+    if (desc.includes('art') || desc.includes('cultural')) cultural_elements.push('Artistic heritage')
+    if (desc.includes('historic') || desc.includes('heritage')) cultural_elements.push('Historic traditions')
+    
+    // Climate detection
+    let climate = 'seasonal'
+    if (desc.includes('tropical') || desc.includes('humid')) climate = 'tropical'
+    else if (desc.includes('mediterranean')) climate = 'mediterranean'
+    else if (desc.includes('desert') || desc.includes('arid')) climate = 'arid'
+    else if (desc.includes('temperate')) climate = 'temperate'
+    
+    return {
+      architecture_style,
+      popular_venues,
+      cultural_elements,
+      climate
+    }
+  }
+
+  /**
+   * Parse web data from venue sites
+   */
+  private parseVenueWebData(webData: string): Partial<LocationContext> {
+    // Enhanced parsing of web data
+    const architectureMatch = webData.match(/architect[ural]*[:\-\s]([^.\n]{10,80})/i)
+    const venuesMatch = webData.match(/venue[s]*[:\-\s]([^.\n]{10,100})/i) || 
+                       webData.match(/popular[:\-\s]([^.\n]{10,100})/i)
+    const cultureMatch = webData.match(/cultur[al]*[:\-\s]([^.\n]{10,80})/i) ||
+                        webData.match(/tradition[s]*[:\-\s]([^.\n]{10,80})/i)
+    
+    return {
+      architecture_style: architectureMatch?.[1]?.trim() || 'Classic elegance',
+      popular_venues: venuesMatch?.[1]?.split(/[,&]/).map(v => v.trim()).filter(v => v.length > 3) || ['Traditional venues'],
+      cultural_elements: cultureMatch?.[1]?.split(/[,&]/).map(c => c.trim()).filter(c => c.length > 3) || ['Local traditions']
     }
   }
 
@@ -253,31 +489,34 @@ class LocationContextService {
   }
 
   /**
-   * Main method to get location context with caching
+   * Main method to get location context - uses existing wedding_location from onboarding
    */
   async getLocationContext(location: string): Promise<LocationContext> {
     if (!location || location.trim().length === 0) {
       throw new Error('Location is required')
     }
     
-    // Check cache first
+    // 1. Check memory cache first
     const cached = this.getCachedContext(location)
     if (cached) {
+      console.log(`✅ Using cached location context for ${location}`)
       return cached
     }
     
-    // Fetch fresh data
+    // 2. Fetch fresh data from internet using the wedding_location
+    console.log(`🔍 Fetching fresh location context from internet: ${location}`)
     const startTime = Date.now()
     const context = await this.aggregateLocationContext(location)
     const duration = Date.now() - startTime
     
     console.log(`⏱️ Location context fetched in ${duration}ms`)
     
-    // Cache the result
+    // 3. Cache the result in memory only
     this.setCachedContext(location, context)
     
     return context
   }
+
 
   /**
    * Pre-populate cache with popular wedding destinations
