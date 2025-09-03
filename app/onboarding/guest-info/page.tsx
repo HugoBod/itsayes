@@ -112,7 +112,7 @@ export default function GuestInfoPage() {
         <label className="block text-sm font-medium text-gray-700 mb-4">
           Will some of your guests travel from abroad?
         </label>
-        <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
           {INTERNATIONAL_GUEST_OPTIONS.map((option) => (
             <OnboardingButton
               key={option.value}
@@ -161,7 +161,7 @@ export default function GuestInfoPage() {
               value={specialRequirements.otherNotes}
               onChange={(e) => handleSpecialRequirementChange('otherNotes', e.target.value)}
               placeholder="Other notes..."
-              rows={3}
+              rows={1}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none transition-colors text-sm resize-none"
             />
           </div>

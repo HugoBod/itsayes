@@ -31,7 +31,7 @@ export interface CurrencyConfig {
 }
 
 export interface InternationalGuestOption {
-  value: 'many' | 'few' | 'none'
+  value: 'yes' | 'no'
   title: string
   icon: string
 }
@@ -188,19 +188,14 @@ export const CURRENCY_CONFIG = {
  */
 export const INTERNATIONAL_GUEST_OPTIONS = [
   {
-    value: 'many',
-    title: 'Yes, many international guests',
-    icon: 'calendar'
+    value: 'yes',
+    title: 'Yes',
+    icon: 'check'
   },
   {
-    value: 'few',
-    title: 'A few international guests',
-    icon: 'users'
-  },
-  {
-    value: 'none',
-    title: 'No, all local',
-    icon: 'home'
+    value: 'no',
+    title: 'No',
+    icon: 'x'
   }
 ]
 

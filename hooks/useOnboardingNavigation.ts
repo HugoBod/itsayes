@@ -10,7 +10,6 @@ interface UseOnboardingNavigationOptions {
   nextPath: string
   validateData?: () => boolean
   getStepData?: () => Record<string, any>
-  loadingDelay?: number
 }
 
 interface UseOnboardingNavigationReturn {
@@ -28,12 +27,12 @@ export function useOnboardingNavigation({
   prevPath,
   nextPath,
   validateData = () => true,
-  getStepData = () => ({}),
-  loadingDelay = 800
+  getStepData = () => ({})
 }: UseOnboardingNavigationOptions): UseOnboardingNavigationReturn {
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showLoading, setShowLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const clearError = useCallback(() => {
@@ -53,28 +52,48 @@ export function useOnboardingNavigation({
     }
 
     setIsSaving(true)
+    const startTime = Date.now()
+    
+    // Délai pour afficher le loading seulement si l'opération prend du temps
+    const loadingTimeout = setTimeout(() => {
+      setShowLoading(true)
+      setIsNavigating(true)
+    }, 300) // Affiche le loading après 300ms
     
     try {
       const stepData = getStepData()
       const { success, error: saveError } = await onboardingService.saveStep(step, stepData)
       
       if (!success) {
+        clearTimeout(loadingTimeout)
         setError(saveError || 'Failed to save progress')
         setIsSaving(false)
+        setShowLoading(false)
         return
       }
 
       setIsSaving(false)
-      setIsNavigating(true)
+      clearTimeout(loadingTimeout)
       
-      setTimeout(() => {
+      const elapsed = Date.now() - startTime
+      
+      // Si l'opération a été rapide (< 300ms), naviguer immédiatement
+      if (elapsed < 300) {
         router.push(nextPath)
-      }, loadingDelay)
+      } else {
+        // Sinon, laisser un petit délai pour que l'utilisateur voie la transition
+        setIsNavigating(true)
+        setTimeout(() => {
+          router.push(nextPath)
+        }, Math.max(100, 500 - elapsed)) // Au minimum 100ms, au maximum 500ms total
+      }
     } catch (err) {
+      clearTimeout(loadingTimeout)
       setError('An unexpected error occurred while saving')
       setIsSaving(false)
+      setShowLoading(false)
     }
-  }, [step, validateData, getStepData, router, nextPath, loadingDelay])
+  }, [step, validateData, getStepData, router, nextPath])
 
   return {
     isNavigating,
@@ -98,8 +117,7 @@ export function useSimpleOnboardingNavigation(
     prevPath,
     nextPath,
     validateData: () => true,
-    getStepData: () => ({}),
-    loadingDelay: 0
+    getStepData: () => ({})
   })
 }
 
@@ -115,8 +133,7 @@ export function useValidatedOnboardingNavigation(
     prevPath,
     nextPath,
     validateData,
-    getStepData: () => ({}),
-    loadingDelay: 800
+    getStepData: () => ({})
   })
 }
 
@@ -126,16 +143,14 @@ export function useCompleteOnboardingNavigation(
   prevPath: string,
   nextPath: string,
   validateData: () => boolean,
-  getStepData: () => Record<string, any>,
-  loadingDelay = 800
+  getStepData: () => Record<string, any>
 ): UseOnboardingNavigationReturn {
   return useOnboardingNavigation({
     step,
     prevPath,
     nextPath,
     validateData,
-    getStepData,
-    loadingDelay
+    getStepData
   })
 }
 

@@ -170,7 +170,13 @@ export default function CoupleDetailsPage() {
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-white border border-gray-200 shadow-lg" align="start">
+                    <PopoverContent 
+                      className="w-auto p-0 bg-white border border-gray-200 shadow-lg" 
+                      align="start" 
+                      side="bottom"
+                      sideOffset={4}
+                      avoidCollisions={false}
+                    >
                       <CustomCalendar
                         selected={field.value}
                         onSelect={field.onChange}

@@ -70,7 +70,7 @@ export default function SummaryPage() {
   // Loading state
   if (isLoadingOnboarding || isSubmitting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F2ED]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="animate-pulse" style={{
           animation: 'heartbeat 1.5s ease-in-out infinite'
         }}>
@@ -90,7 +90,7 @@ export default function SummaryPage() {
   // Error state for onboarding data
   if (onboardingError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F2ED]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center space-y-4 max-w-md">
           <Icon name="alertCircle" className="h-16 w-16 text-red-500 mx-auto" />
           <div className="space-y-2">
@@ -114,7 +114,7 @@ export default function SummaryPage() {
   // Show generating state
   if (isGeneratingMoodboard) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F2ED]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="animate-pulse" style={{
           animation: 'heartbeat 1.5s ease-in-out infinite'
         }}>
@@ -134,7 +134,7 @@ export default function SummaryPage() {
   // Show moodboard error state
   if (moodboardError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F2ED]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center space-y-4 max-w-md">
           <Icon name="image" className="h-16 w-16 text-gray-400 mx-auto" />
           <div className="space-y-2">
@@ -180,7 +180,7 @@ export default function SummaryPage() {
   // Fallback state (should not reach here normally)
   console.log('⚠️ Fallback state reached')
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F6F2ED]">
+    <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="text-center space-y-4">
         <Logo size="lg" heartColor="bg-primary" textColor="text-primary" className="scale-[2]" />
         <p className="text-gray-600 font-serif mt-4">Preparing your wedding vision...</p>

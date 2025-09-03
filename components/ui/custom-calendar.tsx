@@ -101,7 +101,7 @@ export function CustomCalendar({ selected, onSelect, disabled, className }: Cust
   }
 
   return (
-    <div className={cn("p-3", className)}>
+    <div className={cn("p-3 min-h-[300px] w-[280px]", className)}>
       {/* Header */}
       <div className="flex items-center justify-center gap-2 mb-4 relative">
         <Button
@@ -144,7 +144,7 @@ export function CustomCalendar({ selected, onSelect, disabled, className }: Cust
 
         {/* Month Selector */}
         {showMonthSelect && (
-          <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-48">
+          <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-20 w-48 h-32 overflow-y-auto">
             <div className="grid grid-cols-3 gap-2">
               {months.map((month, index) => (
                 <button
@@ -165,7 +165,7 @@ export function CustomCalendar({ selected, onSelect, disabled, className }: Cust
 
         {/* Year Selector */}
         {showYearSelect && (
-          <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10 min-w-48">
+          <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-20 w-48 h-32 overflow-y-auto">
             <div className="grid grid-cols-3 gap-2">
               {Array.from({ length: 12 }, (_, i) => currentYear - 6 + i).map((year) => (
                 <button

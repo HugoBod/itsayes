@@ -27,7 +27,7 @@ module.exports = {
           dark: '#7A5D4F',
           foreground: '#ffffff',
         },
-        background: '#F5EFE6',
+        background: '#FFFFFF',
         foreground: '#1A1A1A',
         card: '#ffffff',
         'card-foreground': '#1A1A1A',
@@ -42,7 +42,7 @@ module.exports = {
         },
       },
       backgroundImage: {
-        'gradient-warm': 'linear-gradient(135deg, #F5EFE6 0%, #E8DDD4 100%)',
+        'gradient-warm': 'linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 100%)',
       },
       borderRadius: {
         'wedding': '12px',

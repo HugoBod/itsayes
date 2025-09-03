@@ -9,9 +9,14 @@
   --primary-light: #f0f7f4;
   --secondary: #9E7A68;
   --secondary-dark: #7A5D4F;
-  --background: #F5EFE6;
+  --background: #FFFFFF;
   --foreground: #1A1A1A;
   --warm: #9E7A68;
+}
+
+/* Background overrides */
+.bg-gradient-wedding {
+  background: #FFFFFF !important;
 }
 
 /* Component styles */
@@ -38,7 +43,7 @@
 }
 
 .bg-gradient-warm {
-  background: linear-gradient(135deg, #F5EFE6 0%, #E8DDD4 100%);
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 100%);
 }
 
 .text-gradient-luxury {

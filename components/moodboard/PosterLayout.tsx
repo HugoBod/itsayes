@@ -18,7 +18,7 @@ export const PosterLayout = memo(function PosterLayout({
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 1, ease: "easeOut" }}
-      className={`relative w-full h-screen bg-[#F6F2ED] text-[#111] overflow-hidden flex flex-col ${className}`}
+      className={`relative w-full h-screen bg-white text-[#111] overflow-hidden flex flex-col ${className}`}
       style={{ fontFamily: 'var(--font-serif)' }}
     >
       {/* Header Section - Top 20% */}

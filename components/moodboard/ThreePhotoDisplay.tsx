@@ -103,7 +103,7 @@ export const ThreePhotoDisplay = memo(function ThreePhotoDisplay({
   }
 
   return (
-    <div className={`w-full h-screen bg-[#F6F2ED] overflow-hidden flex flex-col ${className}`}>
+    <div className={`w-full h-screen bg-white overflow-hidden flex flex-col ${className}`}>
       {/* Header with couple names and color palette */}
       <div className="pt-3 pb-1 md:pt-4 md:pb-2 flex-shrink-0 px-4 md:px-8">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between max-w-6xl mx-auto">

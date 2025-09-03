@@ -73,7 +73,7 @@ export default function BudgetGuestsPage() {
       imageTitle="Experiences"
       imageSubtitle="Make It Memorable"
       title="Let's make your celebration unforgettable."
-      description="This step is simply to share what truly matters to you. Everything can be adjusted later, and I will suggest many more ideas tailored to your vision. For now, let me know if there are elements you consider essential."
+      description="This step is simply to share what truly matters to you."
       onBack={handleBack}
       onNext={handleNext}
       canProceed={canProceed}
@@ -168,7 +168,7 @@ export default function BudgetGuestsPage() {
           value={specialWishes}
           onChange={(e) => setSpecialWishes(e.target.value)}
           placeholder="culinary experience, unique venue, special surprise for guests..."
-          rows={3}
+          rows={1}
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none transition-colors text-sm resize-none"
         />
       </div>

@@ -111,7 +111,7 @@ export const CinematicMoodboard = memo(function CinematicMoodboard({
   // Loading state
   if (!posterData) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-[#F6F2ED]">
+      <div className="w-full h-screen flex items-center justify-center bg-white">
         <div className="animate-pulse" style={{
           animation: 'heartbeat 1.5s ease-in-out infinite'
         }}>
@@ -181,7 +181,7 @@ export const CinematicMoodboard = memo(function CinematicMoodboard({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: config.backgroundFade / 1000 }}
-        className="absolute inset-0 bg-[#F6F2ED]"
+        className="absolute inset-0 bg-white"
       />
 
       {/* Image cluster container */}
