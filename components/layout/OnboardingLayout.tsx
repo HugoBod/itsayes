@@ -115,8 +115,9 @@ export const OnboardingLayout = memo(function OnboardingLayout({
         </div>
 
         {/* Right side - Form */}
-        <div className="flex w-full lg:w-2/3 flex-col justify-start px-4 sm:px-6 lg:px-12 xl:px-16 pt-24 pb-8 lg:pt-16 min-h-screen overflow-y-auto">
-          <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl mx-auto space-y-6 sm:space-y-8">
+        <div className="flex w-full lg:w-2/3 flex-col min-h-screen overflow-y-auto">
+          <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-12 xl:px-16 py-8 lg:py-12">
+            <div className="w-full max-w-md sm:max-w-lg lg:max-w-xl mx-auto space-y-6 sm:space-y-8 my-auto">
             {/* Mobile preview image - Only shown on mobile */}
             <div className="lg:hidden mb-8">
               <div className="aspect-[16/9] sm:aspect-[16/10] bg-gradient-warm rounded-xl shadow-lg overflow-hidden">
@@ -177,6 +178,7 @@ export const OnboardingLayout = memo(function OnboardingLayout({
               >
                 {nextButtonText}
               </NavigationButton>
+            </div>
             </div>
           </div>
         </div>

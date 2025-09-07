@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ThreePhotoDisplay } from '@/components/moodboard/ThreePhotoDisplay'
+import { ElegantMagazineMoodboard } from '@/components/magazine'
 import { Icon } from '@/components/ui/icons'
 import { Logo } from '@/components/ui/logo'
 import { useOnboardingMoodboard } from '@/hooks/useOnboardingMoodboard'
@@ -164,14 +164,13 @@ export default function SummaryPage() {
     onboardingDataKeys: Object.keys(onboardingData || {})
   })
 
-  // Main cinematic 3-photo display
+  // Main elegant magazine moodboard display
   if (moodboard && isReady && moodboard.source_images) {
-    console.log('✅ Showing 3-photo display')
+    console.log('✅ Showing elegant magazine moodboard')
     return (
-      <ThreePhotoDisplay
-        sourceImages={moodboard.source_images}
+      <ElegantMagazineMoodboard
         onboardingData={onboardingData}
-        moodboard={moodboard}
+        moodboardData={moodboard}
         onComplete={handleCompleteWithMigration}
       />
     )
