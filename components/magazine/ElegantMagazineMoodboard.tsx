@@ -4,12 +4,13 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { transformToMagazineFormat, type OnboardingData, type MoodboardData } from '@/lib/magazine-data-transformer'
 import { Button } from '@/components/ui/button'
+import { PricingModal } from '@/components/ui/pricing-modal'
 import { HeroPage } from './HeroPage'
 
 interface ElegantMagazineMoodboardProps {
   onboardingData: OnboardingData
   moodboardData?: MoodboardData
-  onComplete: () => void
+  onComplete: (pricingPlan: 'free' | 'pro' | 'team') => void
   className?: string
 }
 
@@ -19,16 +20,26 @@ export function ElegantMagazineMoodboard({
   onComplete
 }: ElegantMagazineMoodboardProps) {
   const [currentPage, setCurrentPage] = useState(0)
+  const [showPricingModal, setShowPricingModal] = useState(false)
   
   // Transform data to magazine format
   const magazineData = transformToMagazineFormat(onboardingData, moodboardData)
 
   const nextPage = () => {
+    console.log('📄 nextPage called, currentPage:', currentPage)
     if (currentPage < 2) {
       setCurrentPage(currentPage + 1)
+      console.log('📄 Moving to page:', currentPage + 1)
     } else {
-      onComplete()
+      // Show pricing modal instead of directly completing
+      console.log('🎯 Showing pricing modal!')
+      setShowPricingModal(true)
     }
+  }
+
+  const handlePlanSelection = async (plan: 'free' | 'pro' | 'team') => {
+    setShowPricingModal(false)
+    await onComplete(plan)
   }
 
   const prevPage = () => {
@@ -38,10 +49,10 @@ export function ElegantMagazineMoodboard({
   }
 
   return (
-    <div className="min-h-screen relative">
+    <div className="h-screen relative overflow-hidden">
       {/* Page container */}
       <div 
-        className="w-full h-screen relative overflow-hidden"
+        className="w-full h-full relative overflow-hidden"
         role="main"
         aria-label={`Page ${currentPage + 1} of 3`}
       >
@@ -122,7 +133,7 @@ export function ElegantMagazineMoodboard({
               imageAlt={magazineData.images?.[2]?.displayTitle || "Wedding moodboard"}
               description={`Your curated wedding vision comes to life through carefully selected colors, styles, and details. Every element harmoniously designed to reflect your unique love story.`}
               buttonText="Complete Journey ✨"
-              onButtonClick={onComplete}
+              onButtonClick={nextPage}
               metrics={[
                 {
                   value: (
@@ -153,7 +164,7 @@ export function ElegantMagazineMoodboard({
         </AnimatePresence>
 
         {/* Page Indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+        <div className="absolute bottom-4 md:bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
           {[0, 1, 2].map((page) => (
             <button
               key={page}
@@ -167,6 +178,23 @@ export function ElegantMagazineMoodboard({
             />
           ))}
         </div>
+
+        {/* Pricing Modal */}
+        <PricingModal
+          isOpen={showPricingModal}
+          onClose={() => {
+            console.log('💰 Closing pricing modal')
+            setShowPricingModal(false)
+          }}
+          onSelectPlan={handlePlanSelection}
+        />
+        
+        {/* Debug info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="fixed top-4 left-4 bg-black text-white text-xs p-2 rounded z-[9999]">
+            Modal: {showPricingModal ? 'OPEN' : 'CLOSED'} | Page: {currentPage + 1}/3
+          </div>
+        )}
       </div>
     </div>
   )

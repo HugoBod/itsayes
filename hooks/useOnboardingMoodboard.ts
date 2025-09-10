@@ -53,7 +53,7 @@ interface UseOnboardingMoodboardReturn {
   
   // Actions
   generateMoodboard: () => Promise<void>
-  completeOnboardingWithMigration: () => Promise<{ success: boolean; error?: string }>
+  completeOnboardingWithMigration: (pricingPlan?: 'free' | 'pro' | 'team') => Promise<{ success: boolean; error?: string }>
   refreshOnboardingData: () => Promise<void>
 }
 
@@ -168,10 +168,11 @@ export function useOnboardingMoodboard(): UseOnboardingMoodboardReturn {
     }
   }, [moodboardActions])
 
-  // Complete onboarding with migration
-  const completeOnboardingWithMigration = useCallback(async () => {
+  // Complete onboarding with migration and pricing plan
+  const completeOnboardingWithMigration = useCallback(async (pricingPlan: 'free' | 'pro' | 'team' = 'free') => {
     try {
       console.log('🎯 Starting onboarding completion with migration...')
+      console.log('📦 Selected pricing plan:', pricingPlan)
       
       // Check if already migrated to avoid duplicate work
       const workspace = await onboardingService.getCurrentWorkspace()
@@ -180,8 +181,19 @@ export function useOnboardingMoodboard(): UseOnboardingMoodboardReturn {
         return { success: true }
       }
       
-      // Call the migration service
-      const result = await onboardingService.completeOnboarding()
+      // Only skip if BOTH pricing plan AND onboarding are completed
+      if (workspace?.pricing_plan === pricingPlan && workspace?.onboarding_completed_at) {
+        console.log(`✅ Workspace already has ${pricingPlan} plan AND onboarding completed, skipping completion`)
+        return { success: true }
+      }
+      
+      // If same pricing plan but onboarding not completed, we still need to complete
+      if (workspace?.pricing_plan === pricingPlan && !workspace?.onboarding_completed_at) {
+        console.log(`⚠️ Workspace has ${pricingPlan} plan but onboarding not completed, proceeding with completion`)
+      }
+      
+      // Call the migration service with pricing plan
+      const result = await onboardingService.completeOnboarding(pricingPlan)
       
       if (!result.success) {
         console.error('❌ Migration failed:', result.error)

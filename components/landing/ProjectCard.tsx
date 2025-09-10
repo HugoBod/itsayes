@@ -12,6 +12,9 @@ interface ProjectCardProps {
   style?: string
   guestCount?: number
   likes?: number
+  views?: number
+  isPublic?: boolean
+  publicSlug?: string
 }
 
 export function ProjectCard({ 
@@ -21,10 +24,18 @@ export function ProjectCard({
   date, 
   style, 
   guestCount, 
-  likes = 0 
+  likes = 0,
+  views = 0,
+  isPublic = false,
+  publicSlug
 }: ProjectCardProps) {
+  // Use public slug for URL if available, otherwise fall back to id
+  const href = isPublic && publicSlug 
+    ? `/community/project/${publicSlug}` 
+    : `/community/project/${id}`
+    
   return (
-    <Link href={`/community/project/${id}`} className="group block">
+    <Link href={href} className="group block">
       <div className="bg-white rounded-wedding shadow-sm border border-neutral-200/50 hover:shadow-md transition-all duration-200 overflow-hidden">
         <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-secondary/20 relative">
           <div className="absolute inset-0 flex items-center justify-center">
@@ -65,9 +76,17 @@ export function ProjectCard({
                 {style}
               </Badge>
             )}
-            <div className="flex items-center gap-1 text-xs text-neutral-500">
-              <Icon name="heart" className="h-3 w-3" />
-              <span>{likes}</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 text-xs text-neutral-500">
+                <Icon name="heart" className="h-3 w-3" />
+                <span>{likes}</span>
+              </div>
+              {isPublic && views > 0 && (
+                <div className="flex items-center gap-1 text-xs text-neutral-500">
+                  <Icon name="eye" className="h-3 w-3" />
+                  <span>{views}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

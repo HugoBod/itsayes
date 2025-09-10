@@ -51,6 +51,22 @@ export default function PrivateLayout({
     }
 
     checkAuthAndOnboarding()
+    
+    // Also listen for potential completion events
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'onboarding-completed') {
+        console.log('🔄 Detected onboarding completion, rechecking...')
+        setLoading(true)
+        setIsAuthorized(false)
+        checkAuthAndOnboarding()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
   }, [router])
 
   // Show loading while checking

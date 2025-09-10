@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/ui/logo'
 import { useAuthStatus } from '@/hooks/useAuthStatus'
 import { onboardingService } from '@/lib/onboarding'
+import { supabase } from '@/lib/supabase-client'
 
 export function NavbarEnhanced() {
   const [isScrolled, setIsScrolled] = useState(false)
-  const { isAuthenticated, userEmail } = useAuthStatus()
+  const { isAuthenticated, userEmail, isLoading } = useAuthStatus()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,11 +24,16 @@ export function NavbarEnhanced() {
 
   return (
     <nav 
+      id="main-navbar"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-out ${
         isScrolled 
           ? 'py-2' 
           : 'py-4'
       }`}
+      style={{
+        // Aide Next.js à identifier cette navbar pour l'auto-scroll
+        contain: 'layout style'
+      }}
     >
       <div className={`mx-auto px-0 sm:px-0 lg:px-1 transition-all duration-500 ease-out ${
         isScrolled ? 'max-w-5xl' : 'max-w-7xl'
@@ -136,30 +142,34 @@ function DashboardButton() {
   const handleDashboardClick = async () => {
     setIsChecking(true)
     try {
+      // First check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError || !user) {
+        router.push('/auth/signin?redirectTo=/dashboard')
+        return
+      }
+      
+      
       // Check if onboarding is completed according to Phase 3 architecture
-      console.log('🔍 Checking onboarding completion status...')
       const { completed, error } = await onboardingService.isOnboardingComplete()
-      console.log('🔍 isOnboardingComplete() result:', { completed, error })
       
       if (error) {
-        console.error('❌ Error checking onboarding status:', error)
-        // On error, default to onboarding
+        // On error, default to onboarding since user is authenticated
         router.push('/onboarding')
         return
       }
 
       // Smart routing according to architecture
       if (completed) {
-        console.log('✅ Onboarding completed, redirecting to dashboard')
         router.push('/dashboard')
       } else {
-        console.log('⏳ Onboarding not completed, redirecting to onboarding')
         router.push('/onboarding')
       }
     } catch (error) {
       console.error('Error in dashboard click:', error)
-      // Fallback to onboarding on error
-      router.push('/onboarding')
+      // Fallback to signin if authentication fails
+      router.push('/auth/signin?redirectTo=/dashboard')
     } finally {
       setIsChecking(false)
     }

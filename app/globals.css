@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Amélioration de l'auto-scroll avec les éléments fixed */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px; /* Compense la hauteur de la navbar fixed */
+}
+
+/* Optimisation pour Next.js auto-scroll */
+#main-navbar, #secondary-navbar {
+  contain: layout style;
+}
+
+/* Améliore les performances de scroll */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Variables CSS pour les classes custom */
 :root {
   --primary: #2F5545;

@@ -10,8 +10,7 @@ export const Hero = memo(function Hero() {
   const router = useRouter()
   
   const handleGetStarted = useCallback(() => {
-    // For unauthenticated users on landing page, go directly to signup
-    // If user is already authenticated, they would be redirected by middleware
+    // Redirect to signup for new users - this is the correct entry point
     router.push('/auth/signup')
   }, [router])
 
@@ -76,11 +75,13 @@ export const Hero = memo(function Hero() {
                       src={`/images/home/moodboard/wedding-${num}.webp`}
                       alt={`Beautiful wedding inspiration ${num}`}
                       fill
-                      className="object-cover"
+                      className="object-cover transition-opacity duration-300"
                       sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 16.66vw"
                       priority={num <= 4}
                       loading={num <= 4 ? 'eager' : 'lazy'}
-                      quality={75}
+                      quality={num <= 4 ? 90 : 60}
+                      placeholder="blur"
+                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R+Dh0ehs0uFdpbeqPHr9Gw6q8rHJKPQlgJwl1z8pJbSy5c6pJ0rXUl2aMmFXmtF+C7CXZrPh8NJxYmn3TdKL6PaZqTQlyj7xKTnkCsNLqPANv2aQG5hfaJvqU=,4,4"
                     />
                   </div>
                 ))}

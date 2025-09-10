@@ -22,6 +22,8 @@ const {
   XCircle,
   Menu,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Star,
   Heart,
   MapPin,
@@ -50,6 +52,11 @@ const {
   Palette,
   Lightbulb,
   Share,
+  // Social icons
+  Twitter,
+  Facebook,
+  Instagram,
+  Linkedin,
 } = Icons
 
 export const iconRegistry = {
@@ -76,6 +83,8 @@ export const iconRegistry = {
   x: X,
   menu: Menu,
   chevronDown: ChevronDown,
+  chevronLeft: ChevronLeft,
+  chevronRight: ChevronRight,
   star: Star,
   heart: Heart,
   mapPin: MapPin,
@@ -111,6 +120,11 @@ export const iconRegistry = {
   palette: Palette,
   lightbulb: Lightbulb,
   share: Share,
+  // Social icons
+  twitter: Twitter,
+  facebook: Facebook,
+  instagram: Instagram,
+  linkedin: Linkedin,
 } as const
 
 export type IconName = keyof typeof iconRegistry

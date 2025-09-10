@@ -1,67 +1,126 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { ProjectCard } from '@/components/landing/ProjectCard'
-import { ProjectFilters } from '@/components/ui/project-filters'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@/components/ui/icons'
-import { DEMO_PROJECTS, WEDDING_STYLES, FILTER_OPTIONS } from '@/lib/constants'
+import { communityService, type CommunityProject, type FilterType, type StyleFilter, WEDDING_STYLES, FILTER_OPTIONS } from '@/lib/community'
 
-type Project = {
-  id: string
-  name: string
-  description: string
-  wedding_date: string
-  style: string
-  guest_count: number
-  likes: number
+// Dynamic imports for heavy community components
+const ProjectCard = dynamic(
+  () => import('@/components/landing/ProjectCard').then(mod => ({ default: mod.ProjectCard })),
+  { 
+    loading: () => (
+      <div className="animate-pulse">
+        <div className="bg-neutral-200 rounded-lg aspect-[4/3]"></div>
+        <div className="mt-4 space-y-2">
+          <div className="h-4 bg-neutral-200 rounded w-3/4"></div>
+          <div className="h-4 bg-neutral-200 rounded w-1/2"></div>
+        </div>
+      </div>
+    ),
+    ssr: false 
+  }
+)
+
+const ProjectFilters = dynamic(
+  () => import('@/components/ui/project-filters').then(mod => ({ default: mod.ProjectFilters })),
+  { 
+    loading: () => (
+      <div className="animate-pulse">
+        <div className="flex gap-4">
+          <div className="h-10 bg-neutral-200 rounded w-24"></div>
+          <div className="h-10 bg-neutral-200 rounded w-32"></div>
+          <div className="h-10 bg-neutral-200 rounded w-28"></div>
+        </div>
+      </div>
+    ),
+    ssr: false 
+  }
+)
+
+// Helper function to extract style from preferences JSON
+function extractStyleFromPreferences(stylePreferences: string | null): string {
+  if (!stylePreferences) return 'Classic'
+  
+  try {
+    const parsed = JSON.parse(stylePreferences)
+    if (parsed.themes && parsed.themes.length > 0) {
+      return parsed.themes[0]
+    }
+    if (parsed.style) {
+      return parsed.style
+    }
+  } catch {
+    // If parsing fails, try to find style keywords in the string
+    const styles = ['Classic', 'Bohemian', 'Modern', 'Rustic', 'Beach', 'Garden', 'Vintage', 'Industrial', 'Romantic', 'Minimalist', 'Luxury']
+    for (const style of styles) {
+      if (stylePreferences.toLowerCase().includes(style.toLowerCase())) {
+        return style
+      }
+    }
+  }
+  
+  return 'Classic'
 }
 
 export default function CommunityPage() {
-  const [selectedFilter, setSelectedFilter] = useState('Popular')
-  const [selectedStyle, setSelectedStyle] = useState<string | null>('All')
-  const [projects, setProjects] = useState<Project[]>([])
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>('Popular')
+  const [selectedStyle, setSelectedStyle] = useState<StyleFilter>('All')
+  const [projects, setProjects] = useState<CommunityProject[]>([])
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchProjects(true)
-  }, [selectedFilter, selectedStyle])
-
-  const fetchProjects = async (reset = false) => {
+  const fetchProjects = useCallback(async (reset = false) => {
     setLoading(true)
+    setError(null)
+    
     try {
-      // Simulate network delay for better UX
-      await new Promise(resolve => setTimeout(resolve, reset ? 800 : 400))
-
-      // Filter by style
-      let filteredProjects = selectedStyle && selectedStyle !== 'All' 
-        ? DEMO_PROJECTS.filter((project: Project) => project.style === selectedStyle)
-        : DEMO_PROJECTS
-
-      // Sort by filter
-      if (selectedFilter === 'Recent') {
-        filteredProjects = filteredProjects.sort((a: Project, b: Project) => new Date(b.wedding_date).getTime() - new Date(a.wedding_date).getTime())
-      } else if (selectedFilter === 'Popular') {
-        filteredProjects = filteredProjects.sort((a: Project, b: Project) => b.likes - a.likes)
-      } else if (selectedFilter === 'Trending') {
-        filteredProjects = filteredProjects.sort((a: Project, b: Project) => b.guest_count - a.guest_count)
+      const offset = reset ? 0 : projects.length
+      const result = await communityService.getPublicProjects(
+        selectedFilter,
+        selectedStyle,
+        12, // limit
+        offset
+      )
+      
+      if (result.error) {
+        setError(result.error)
+        setProjects([])
+        setHasMore(false)
+        return
       }
-
-      setProjects(reset ? filteredProjects : [...projects, ...filteredProjects])
-      setHasMore(false)
+      
+      setProjects(reset ? result.projects : [...projects, ...result.projects])
+      setHasMore(result.hasMore)
+      
     } catch (error) {
-      console.warn('Error loading projects')
+      console.error('Error loading projects:', error)
+      setError('Failed to load community projects')
       setProjects([])
       setHasMore(false)
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedFilter, selectedStyle, projects.length])
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     fetchProjects(false)
-  }
+  }, [fetchProjects])
+
+  useEffect(() => {
+    fetchProjects(true)
+  }, [selectedFilter, selectedStyle, fetchProjects])
+
+  // Memoized filter handlers to prevent unnecessary re-renders
+  const handleFilterChange = useCallback((filter: string) => {
+    setSelectedFilter(filter as FilterType)
+  }, [])
+
+  const handleStyleChange = useCallback((style: string | null) => {
+    setSelectedStyle((style || 'All') as StyleFilter)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white from-20% via-primary/60 via-50% to-primary/80">
@@ -82,8 +141,8 @@ export default function CommunityPage() {
             styles={WEDDING_STYLES}
             selectedFilter={selectedFilter}
             selectedStyle={selectedStyle}
-            onFilterChange={setSelectedFilter}
-            onStyleChange={setSelectedStyle}
+            onFilterChange={handleFilterChange}
+            onStyleChange={handleStyleChange}
           />
         </div>
 
@@ -99,19 +158,35 @@ export default function CommunityPage() {
               </div>
             ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <div className="flex justify-center mb-4">
+              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-red-50">
+                <Icon name="alertCircle" className="h-10 w-10 text-red-500" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-semibold text-foreground mb-2">Something went wrong</h3>
+            <p className="text-warm mb-6">{error}</p>
+            <Button onClick={() => fetchProjects(true)} className="bg-primary hover:bg-primary-600 text-white border-0">
+              Try Again
+            </Button>
+          </div>
         ) : projects.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {projects.map((project: Project) => (
+              {projects.map((project) => (
                 <ProjectCard
                   key={project.id}
                   id={project.id}
                   name={project.name}
-                  description={project.description}
-                  date={project.wedding_date}
-                  style={project.style}
-                  guestCount={project.guest_count}
-                  likes={project.likes || 0}
+                  description={project.description || ''}
+                  date={project.wedding_date || ''}
+                  style={extractStyleFromPreferences(project.style_preferences)}
+                  guestCount={0} // We don't store guest count in community view for privacy
+                  likes={project.likes_count}
+                  views={project.views_count}
+                  isPublic={true}
+                  publicSlug={project.public_slug}
                 />
               ))}
             </div>

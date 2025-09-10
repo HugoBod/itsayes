@@ -2,10 +2,34 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ElegantMagazineMoodboard } from '@/components/magazine'
+import dynamic from 'next/dynamic'
 import { Icon } from '@/components/ui/icons'
 import { Logo } from '@/components/ui/logo'
 import { useOnboardingMoodboard } from '@/hooks/useOnboardingMoodboard'
+
+// Dynamic import for heavy moodboard component with better loading UX
+const ElegantMagazineMoodboard = dynamic(
+  () => import('@/components/magazine/ElegantMagazineMoodboard').then(mod => ({ default: mod.ElegantMagazineMoodboard })),
+  { 
+    loading: () => (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-pulse" style={{
+          animation: 'heartbeat 1.5s ease-in-out infinite'
+        }}>
+          <Logo size="lg" heartColor="bg-primary" textColor="text-primary" className="scale-[3]" />
+        </div>
+        <style jsx>{`
+          @keyframes heartbeat {
+            0% { transform: scale(3); }
+            50% { transform: scale(3.6); }
+            100% { transform: scale(3); }
+          }
+        `}</style>
+      </div>
+    ),
+    ssr: false // Garder SSR disabled pour éviter les problèmes de hydratation
+  }
+)
 
 export default function SummaryPage() {
   const router = useRouter()
@@ -38,31 +62,33 @@ export default function SummaryPage() {
   }, [isReady, moodboard, isGeneratingMoodboard, hasGenerated, moodboardError, generateMoodboard])
 
 
-  // Handle completion with migration
-  const handleCompleteWithMigration = useCallback(async () => {
+  // Handle completion with migration and pricing plan selection
+  const handleCompleteWithMigration = useCallback(async (pricingPlan: 'free' | 'pro' | 'team') => {
     setIsSubmitting(true)
     
-    // Navigate immediately for better UX
-    router.push('/dashboard')
-    
-    // Run migration in background - don't block navigation
     try {
-      console.log('🎯 Starting background migration...')
+      console.log('🎯 Starting migration with pricing plan:', pricingPlan)
       
-      // Non-blocking migration
-      completeOnboardingWithMigration().then((result) => {
-        if (!result.success) {
-          console.error('❌ Background migration failed:', result.error)
-        } else {
-          console.log('✅ Background migration completed successfully!')
-        }
-      }).catch((error) => {
-        console.error('Error in background migration:', error)
-      })
+      // Complete migration first (should be fast)
+      const result = await completeOnboardingWithMigration(pricingPlan)
+      
+      if (!result.success) {
+        console.error('❌ Migration failed:', result.error)
+        setIsSubmitting(false)
+        return
+      }
+      
+      console.log('✅ Migration completed successfully!')
+      console.log('📦 Pricing plan selected:', pricingPlan)
+      
+      // Signal completion to other tabs/windows
+      localStorage.setItem('onboarding-completed', Date.now().toString())
+      
+      // Navigate immediately after successful migration
+      router.push('/dashboard')
       
     } catch (error) {
-      console.error('Error starting background migration:', error)
-    } finally {
+      console.error('Error in migration process:', error)
       setIsSubmitting(false)
     }
   }, [completeOnboardingWithMigration, router])
@@ -143,7 +169,7 @@ export default function SummaryPage() {
             <p className="text-sm text-gray-500">You can continue to your dashboard</p>
           </div>
           <button 
-            onClick={handleCompleteWithMigration}
+            onClick={() => handleCompleteWithMigration('free')}
             disabled={isSubmitting}
             className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
           >

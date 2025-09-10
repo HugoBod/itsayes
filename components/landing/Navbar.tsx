@@ -19,11 +19,16 @@ export function Navbar() {
 
   return (
     <nav 
+      id="secondary-navbar"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled 
           ? 'bg-white/80 backdrop-blur-xl shadow-sm' 
           : 'bg-transparent'
       }`}
+      style={{
+        // Aide Next.js à identifier cette navbar pour l'auto-scroll
+        contain: 'layout style'
+      }}
     >
       <div className={`transition-all duration-300 ${
         isScrolled ? 'py-2' : 'py-4'

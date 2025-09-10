@@ -167,7 +167,7 @@ SELECT
     COUNT(CASE WHEN i.generation_metadata->>'generation_type' = 'multi-image' THEN 1 END) AS multi_image_moodboards,
     COUNT(CASE WHEN i.generation_metadata->>'generation_type' = 'single' THEN 1 END) AS single_image_moodboards,
     MAX(i.created_at) AS latest_moodboard_created,
-    COUNT(CASE WHEN i.source_images IS NOT NULL AND jsonb_array_length(i.source_images) > 1 THEN 1 END) AS composed_moodboards
+    COUNT(CASE WHEN i.source_images IS NOT NULL AND array_length(i.source_images, 1) > 1 THEN 1 END) AS composed_moodboards
 FROM workspaces w
 LEFT JOIN items i ON w.id = i.workspace_id AND i.type = 'moodboard' AND i.status = 'active'
 GROUP BY w.id, w.name;

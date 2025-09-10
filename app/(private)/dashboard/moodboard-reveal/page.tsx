@@ -2,14 +2,37 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { useMoodboard } from '@/hooks/useMoodboard'
-import { MoodboardGrid } from '@/components/moodboard/MoodboardGrid'
-// WeddingCharacteristics component not used to avoid duplication
-import { AIInsights } from '@/components/moodboard/AIInsights'
 import { Icon } from '@/components/ui/icons'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { MoodboardSkeleton } from '@/components/ui/skeleton'
+
+// Dynamic imports for heavy moodboard components
+const MoodboardGrid = dynamic(
+  () => import('@/components/moodboard/MoodboardGrid').then(mod => ({ default: mod.MoodboardGrid })),
+  { 
+    loading: () => <MoodboardSkeleton />,
+    ssr: false 
+  }
+)
+
+const AIInsights = dynamic(
+  () => import('@/components/moodboard/AIInsights').then(mod => ({ default: mod.AIInsights })),
+  { 
+    loading: () => (
+      <Card className="p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        </div>
+      </Card>
+    ),
+    ssr: false 
+  }
+)
 
 // MoodboardData interface is now imported from useMoodboard hook
 

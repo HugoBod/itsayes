@@ -1,4 +1,3 @@
-import { memo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Icon, IconName } from '@/components/ui/icons'
 import { Button } from '@/components/ui/button'
@@ -65,7 +64,7 @@ const quickActions: Array<{
   }
 ]
 
-export default memo(function DashboardPage() {
+export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -137,4 +136,4 @@ export default memo(function DashboardPage() {
       </div>
     </div>
   )
-})
+}

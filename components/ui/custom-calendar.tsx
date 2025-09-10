@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Icon } from '@/components/ui/icons'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -111,7 +111,7 @@ export function CustomCalendar({ selected, onSelect, disabled, className }: Cust
           disabled={disabled}
           className="h-8 w-8 p-0"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <Icon name="chevronLeft" className="h-4 w-4" />
         </Button>
 
         <div className="flex items-center gap-1">
@@ -139,7 +139,7 @@ export function CustomCalendar({ selected, onSelect, disabled, className }: Cust
           disabled={disabled}
           className="h-8 w-8 p-0"
         >
-          <ChevronRight className="h-4 w-4" />
+          <Icon name="chevronRight" className="h-4 w-4" />
         </Button>
 
         {/* Month Selector */}

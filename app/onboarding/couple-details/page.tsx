@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+import { Icon } from '@/components/ui/icons'
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -166,7 +166,7 @@ export default function CoupleDetailsPage() {
                           ) : (
                             <span>Pick a date</span>
                           )}
-                          <CalendarIcon className="h-4 w-4 opacity-50" />
+                          <Icon name="calendar" className="h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>

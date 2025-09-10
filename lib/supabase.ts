@@ -11,14 +11,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-// Client-side Supabase client
+// Singleton client instance for client-side usage
+let clientInstance: ReturnType<typeof createClient<Database>> | null = null
+
+// Client-side Supabase client (singleton pattern)
 export const createClientComponentClient = () => {
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  if (clientInstance) {
+    return clientInstance
+  }
+  
+  clientInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      // Keep the default storage key to avoid breaking existing sessions
+      storageKey: 'sb-itsayes-auth-token',
     },
   })
+  
+  return clientInstance
 }
 
 // Server Component client
@@ -139,24 +150,26 @@ export const createMiddlewareClient = (request: NextRequest, response: NextRespo
   )
 }
 
-// Environment-aware client factory
+// Environment-aware client factory (uses singleton)
 export const createEnvironmentClient = () => {
-  // Use local environment for development
-  if (process.env.NODE_ENV === 'development') {
-    return createClientComponentClient()
+  // Always use the singleton to avoid multiple instances
+  return createClientComponentClient()
+}
+
+// Utility to reset the singleton (useful for HMR or testing)
+export const resetClientInstance = () => {
+  if (clientInstance) {
+    // Clean up any listeners or subscriptions
+    clientInstance.auth.stopAutoRefresh?.()
+    clientInstance = null
   }
-  
-  // Production client with enhanced error handling
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-    global: {
-      headers: {
-        'x-application-name': 'itsayes-wedding-planner',
-      },
-    },
-  })
+}
+
+// Hot Module Replacement cleanup
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  if ((window as any).module?.hot) {
+    (window as any).module.hot.dispose(() => {
+      resetClientInstance()
+    })
+  }
 }

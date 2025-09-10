@@ -32,7 +32,6 @@ export function useOnboardingNavigation({
   const router = useRouter()
   const [isNavigating, setIsNavigating] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [showLoading, setShowLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const clearError = useCallback(() => {
@@ -52,46 +51,25 @@ export function useOnboardingNavigation({
     }
 
     setIsSaving(true)
-    const startTime = Date.now()
-    
-    // Délai pour afficher le loading seulement si l'opération prend du temps
-    const loadingTimeout = setTimeout(() => {
-      setShowLoading(true)
-      setIsNavigating(true)
-    }, 300) // Affiche le loading après 300ms
+    setIsNavigating(true)
     
     try {
       const stepData = getStepData()
       const { success, error: saveError } = await onboardingService.saveStep(step, stepData)
       
       if (!success) {
-        clearTimeout(loadingTimeout)
         setError(saveError || 'Failed to save progress')
         setIsSaving(false)
-        setShowLoading(false)
+        setIsNavigating(false)
         return
       }
 
-      setIsSaving(false)
-      clearTimeout(loadingTimeout)
-      
-      const elapsed = Date.now() - startTime
-      
-      // Si l'opération a été rapide (< 300ms), naviguer immédiatement
-      if (elapsed < 300) {
-        router.push(nextPath)
-      } else {
-        // Sinon, laisser un petit délai pour que l'utilisateur voie la transition
-        setIsNavigating(true)
-        setTimeout(() => {
-          router.push(nextPath)
-        }, Math.max(100, 500 - elapsed)) // Au minimum 100ms, au maximum 500ms total
-      }
+      // Navigation immédiate après sauvegarde réussie
+      router.push(nextPath)
     } catch (err) {
-      clearTimeout(loadingTimeout)
       setError('An unexpected error occurred while saving')
       setIsSaving(false)
-      setShowLoading(false)
+      setIsNavigating(false)
     }
   }, [step, validateData, getStepData, router, nextPath])
 
