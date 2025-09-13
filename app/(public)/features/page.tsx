@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Icon } from '@/components/ui/icons'
 import { Badge } from '@/components/ui/badge'
@@ -181,18 +182,18 @@ export default function FeaturesPage() {
               Join thousands of couples who have planned their perfect day with ItsaYes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
+              <Link
                 href="/signup"
                 className="inline-flex items-center justify-center px-6 py-3 bg-primary hover:bg-primary-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
               >
                 Get Started Free
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/community"
                 className="inline-flex items-center justify-center px-6 py-3 bg-white text-neutral-700 hover:text-foreground font-medium rounded-lg border border-neutral-200 hover:border-neutral-300 transition-colors"
               >
                 Browse Community
-              </a>
+              </Link>
             </div>
           </Card>
         </div>

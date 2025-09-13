@@ -4,7 +4,6 @@ import type { CommunityProject } from './community'
 
 interface ServerCommunityService {
   getProjectById: (id: string) => Promise<{ project: CommunityProject | null; error?: string }>
-  getProjectBySlug: (slug: string) => Promise<{ project: CommunityProject | null; error?: string }>
   getPublicIdByWorkspaceId: (workspaceId: string) => Promise<{ publicId: string | null; error?: string }>
   getPublicProjects: (
     filter?: 'Popular' | 'Recent' | 'Trending',
@@ -91,71 +90,6 @@ class ServerCommunityDataService implements ServerCommunityService {
     }
   }
 
-  async getProjectBySlug(slug: string): Promise<{ project: CommunityProject | null; error?: string }> {
-    try {
-      const supabase = await createServerComponentClient()
-
-      const { data, error } = await supabase
-        .from('workspaces')
-        .select(`
-          id,
-          name,
-          description,
-          public_id,
-          wedding_date,
-          pricing_plan,
-          likes_count,
-          views_count,
-          remix_count,
-          created_at,
-          last_activity_at,
-          featured_image_url,
-          onboarding_data_couple
-        `)
-        .eq('public_id', slug)
-        .eq('is_public', true)
-        .single()
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return { project: null, error: 'Project not found' }
-        }
-        console.error('Error fetching project by slug:', error)
-        return { project: null, error: error.message }
-      }
-
-      // Transform to CommunityProject interface
-      const project: CommunityProject = {
-        id: data.id,
-        name: data.name,
-        description: data.description,
-        public_id: data.public_id || '',
-        wedding_date: data.wedding_date,
-        pricing_plan: data.pricing_plan as 'free' | 'pro' | 'team',
-        likes_count: data.likes_count || 0,
-        views_count: data.views_count || 0,
-        remix_count: data.remix_count || 0,
-        created_at: data.created_at || new Date().toISOString(),
-        last_activity_at: data.last_activity_at || new Date().toISOString(),
-        featured_image_url: data.featured_image_url,
-        style_preferences: JSON.stringify({
-          themes: data.onboarding_data_couple?.step_4?.themes || [],
-          colorPalette: data.onboarding_data_couple?.step_4?.colorPalette || null
-        }),
-        partner1_name: 'Partner 1',
-        partner2_name: 'Partner 2',
-        trending_score: 0
-      }
-
-      return { project }
-    } catch (error) {
-      console.error('Error in getProjectBySlug:', error)
-      return {
-        project: null,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
-    }
-  }
 
   async getPublicIdByWorkspaceId(workspaceId: string): Promise<{ publicId: string | null; error?: string }> {
     try {

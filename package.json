@@ -17,7 +17,8 @@
     "test:coverage": "jest --coverage",
     "cache:clear": "rm -rf .next",
     "optimize:images": "node scripts/optimize-images.js",
-    "clean:deps": "npm prune"
+    "clean:deps": "npm prune",
+    "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.1",
@@ -45,6 +46,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@next/bundle-analyzer": "^15.5.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",

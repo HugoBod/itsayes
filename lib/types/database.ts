@@ -806,6 +806,7 @@ export type Database = {
           onboarding_data_planner: Json | null
           onboarding_migrated_at: string | null
           pricing_plan: string | null
+          public_id: string | null
           public_slug: string | null
           remix_count: number | null
           slug: string | null
@@ -839,6 +840,7 @@ export type Database = {
           onboarding_data_planner?: Json | null
           onboarding_migrated_at?: string | null
           pricing_plan?: string | null
+          public_id?: string | null
           public_slug?: string | null
           remix_count?: number | null
           slug?: string | null
@@ -872,6 +874,7 @@ export type Database = {
           onboarding_data_planner?: Json | null
           onboarding_migrated_at?: string | null
           pricing_plan?: string | null
+          public_id?: string | null
           public_slug?: string | null
           remix_count?: number | null
           slug?: string | null
@@ -896,58 +899,21 @@ export type Database = {
     Views: {
       community_projects: {
         Row: {
+          color_palette: string | null
           created_at: string | null
           description: string | null
           featured_image_url: string | null
           id: string | null
+          is_public: boolean | null
           last_activity_at: string | null
           likes_count: number | null
           name: string | null
-          partner1_name: string | null
-          partner2_name: string | null
-          pricing_plan: string | null
-          public_slug: string | null
+          public_id: string | null
           remix_count: number | null
-          style_preferences: string | null
+          style_themes: string | null
           trending_score: number | null
           views_count: number | null
           wedding_date: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          featured_image_url?: string | null
-          id?: string | null
-          last_activity_at?: string | null
-          likes_count?: number | null
-          name?: string | null
-          partner1_name?: never
-          partner2_name?: never
-          pricing_plan?: string | null
-          public_slug?: string | null
-          remix_count?: number | null
-          style_preferences?: never
-          trending_score?: never
-          views_count?: number | null
-          wedding_date?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          featured_image_url?: string | null
-          id?: string | null
-          last_activity_at?: string | null
-          likes_count?: number | null
-          name?: string | null
-          partner1_name?: never
-          partner2_name?: never
-          pricing_plan?: string | null
-          public_slug?: string | null
-          remix_count?: number | null
-          style_preferences?: never
-          trending_score?: never
-          views_count?: number | null
-          wedding_date?: string | null
         }
         Relationships: []
       }
@@ -984,8 +950,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_public_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_public_slug: {
         Args: { workspace_id: string; workspace_name: string }
+        Returns: string
+      }
+      generate_unique_public_id: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       get_location_context: {

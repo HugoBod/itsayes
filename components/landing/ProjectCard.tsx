@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Icon } from '@/components/ui/icons'
 
@@ -41,11 +42,13 @@ export function ProjectCard({
       <div className="bg-white rounded-wedding shadow-sm border border-neutral-200/50 hover:shadow-md transition-all duration-200 overflow-hidden">
         <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-secondary/20 relative overflow-hidden">
           {featuredImage ? (
-            <img
+            <Image
               src={featuredImage}
               alt={name}
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+              priority={false}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
