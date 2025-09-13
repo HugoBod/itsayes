@@ -24,8 +24,10 @@ interface OnboardingService {
   saveStep: (step: number, data: Record<string, any>) => Promise<{ success: boolean; error?: string }>
   getStep: (step: number) => Promise<{ data: Record<string, any> | null; error?: string }>
   getAllSteps: () => Promise<{ data: OnboardingData | null; error?: string }>
-  completeOnboarding: (pricingPlan?: 'free' | 'pro' | 'team') => Promise<{ success: boolean; error?: string }>
+  completeOnboarding: (pricingPlan?: 'free' | 'pro' | 'team') => Promise<{ success: boolean; workspaceId?: string; error?: string }>
   isOnboardingComplete: () => Promise<{ completed: boolean; error?: string }>
+  makeWorkspacePublic: (workspaceId: string) => Promise<{ success: boolean; error?: string }>
+  getCurrentWorkspace: () => Promise<any>
 }
 
 class OnboardingDataService implements OnboardingService {
@@ -202,7 +204,7 @@ class OnboardingDataService implements OnboardingService {
     }
   }
 
-  async completeOnboarding(pricingPlan: 'free' | 'pro' | 'team' = 'free'): Promise<{ success: boolean; error?: string }> {
+  async completeOnboarding(pricingPlan: 'free' | 'pro' | 'team' = 'free'): Promise<{ success: boolean; workspaceId?: string; error?: string }> {
     const startTime = performance.now()
     
     try {
@@ -289,8 +291,8 @@ class OnboardingDataService implements OnboardingService {
       console.log(`⏱️ Database update completed in ${Math.round(performance.now() - updateStartTime)}ms`)
       console.log(`⏱️ Total completion time: ${Math.round(performance.now() - startTime)}ms`)
       console.log('✅ Workspace updated successfully with plan:', pricingPlan)
-      
-      return { success: true }
+
+      return { success: true, workspaceId }
     } catch (error) {
       console.error('Error completing onboarding:', error)
       return { success: false, error: 'An unexpected error occurred' }
@@ -549,6 +551,34 @@ class OnboardingDataService implements OnboardingService {
       return { completed: false, error: 'An unexpected error occurred' }
     }
   }
+
+  async makeWorkspacePublic(workspaceId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      console.log('🌍 Making workspace public:', workspaceId)
+
+      const supabase = createClientComponentClient()
+
+      const { error } = await supabase
+        .from('workspaces')
+        .update({
+          is_public: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', workspaceId)
+
+      if (error) {
+        console.error('❌ Error making workspace public:', error)
+        return { success: false, error: `Failed to make workspace public: ${error.message}` }
+      }
+
+      console.log('✅ Workspace is now public')
+      return { success: true }
+    } catch (error) {
+      console.error('Error in makeWorkspacePublic:', error)
+      return { success: false, error: 'An unexpected error occurred' }
+    }
+  }
+
 }
 
 // Singleton instance

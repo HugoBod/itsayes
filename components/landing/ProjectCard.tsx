@@ -14,38 +14,51 @@ interface ProjectCardProps {
   likes?: number
   views?: number
   isPublic?: boolean
-  publicSlug?: string
+  publicId?: string
+  featuredImage?: string
 }
 
-export function ProjectCard({ 
-  id, 
-  name, 
-  description, 
-  date, 
-  style, 
-  guestCount, 
+export function ProjectCard({
+  id,
+  name,
+  description,
+  date,
+  style,
+  guestCount,
   likes = 0,
   views = 0,
   isPublic = false,
-  publicSlug
+  publicId,
+  featuredImage
 }: ProjectCardProps) {
-  // Use public slug for URL if available, otherwise fall back to id
-  const href = isPublic && publicSlug 
-    ? `/community/project/${publicSlug}` 
+  // Use public ID for URL if available, otherwise fall back to workspace ID
+  const href = isPublic && publicId
+    ? `/community/${publicId}`
     : `/community/project/${id}`
     
   return (
     <Link href={href} className="group block">
       <div className="bg-white rounded-wedding shadow-sm border border-neutral-200/50 hover:shadow-md transition-all duration-200 overflow-hidden">
-        <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-secondary/20 relative">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mb-2">
-                <Icon name="heart" className="h-6 w-6 text-primary" />
+        <div className="aspect-[4/3] bg-gradient-to-br from-primary/10 to-secondary/20 relative overflow-hidden">
+          {featuredImage ? (
+            <img
+              src={featuredImage}
+              alt={name}
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mb-2">
+                  <Icon name="heart" className="h-6 w-6 text-primary" />
+                </div>
+                <p className="text-xs text-neutral-600">Wedding Project</p>
               </div>
-              <p className="text-xs text-neutral-600">Wedding Project</p>
             </div>
-          </div>
+          )}
+          {/* Overlay gradient for better text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
         
         <div className="p-4">

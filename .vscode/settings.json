@@ -4,12 +4,12 @@
     ".next": true,
     ".git": false,
     "**/*.log": true,
-    "**/pnpm-lock.yaml": false
+    "**/package-lock.json": false
   },
   "search.exclude": {
     "node_modules": true,
     ".next": true,
-    "pnpm-lock.yaml": true,
+    "package-lock.json": true,
     "**/*.log": true
   },
   "files.watcherExclude": {

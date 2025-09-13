@@ -175,10 +175,13 @@ export function PricingModal({ isOpen, onClose, onSelectPlan, isLoading = false 
                     {plan.id === 'free' && (
                       <div className="bg-primary/5 rounded-lg p-3 mt-4">
                         <div className="flex items-start gap-2">
-                          <Icon name="alertCircle" className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                          <Icon name="users" className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
                           <div className="text-xs text-primary">
-                            <p className="font-medium mb-1">Community Sharing</p>
-                            <p>Your wedding summary will be visible to inspire other couples. Personal details like names and dates will be hidden.</p>
+                            <p className="font-medium mb-1">🌟 Community Sharing</p>
+                            <p className="mb-2">Your wedding project will automatically become <strong>public</strong> and appear in our community gallery to inspire other couples.</p>
+                            <p className="text-xs opacity-80">✓ Personal details (names, exact dates) will be anonymized for privacy</p>
+                            <p className="text-xs opacity-80">✓ Your moodboard and style choices will be featured</p>
+                            <p className="text-xs opacity-80">✓ Help build the world's most beautiful wedding inspiration gallery</p>
                           </div>
                         </div>
                       </div>

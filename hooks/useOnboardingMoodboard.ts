@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMoodboard } from './useMoodboard'
 import { onboardingService } from '@/lib/onboarding'
+import { processFeaturedImage } from '@/lib/image-extraction'
 
 interface OnboardingData {
   weddingStage?: {
@@ -173,43 +174,70 @@ export function useOnboardingMoodboard(): UseOnboardingMoodboardReturn {
     try {
       console.log('🎯 Starting onboarding completion with migration...')
       console.log('📦 Selected pricing plan:', pricingPlan)
-      
+
       // Check if already migrated to avoid duplicate work
       const workspace = await onboardingService.getCurrentWorkspace()
       if (workspace?.onboarding_completed_at) {
         console.log('✅ Onboarding already completed, skipping migration')
         return { success: true }
       }
-      
+
       // Only skip if BOTH pricing plan AND onboarding are completed
       if (workspace?.pricing_plan === pricingPlan && workspace?.onboarding_completed_at) {
         console.log(`✅ Workspace already has ${pricingPlan} plan AND onboarding completed, skipping completion`)
         return { success: true }
       }
-      
+
       // If same pricing plan but onboarding not completed, we still need to complete
       if (workspace?.pricing_plan === pricingPlan && !workspace?.onboarding_completed_at) {
         console.log(`⚠️ Workspace has ${pricingPlan} plan but onboarding not completed, proceeding with completion`)
       }
-      
+
+      // PHASE 1: Extract featured image if Free plan and moodboard exists
+      if (pricingPlan === 'free' && moodboard && workspace?.id) {
+        console.log('🖼️ Processing featured image for Free plan...')
+
+        const imageResult = await processFeaturedImage(moodboard, workspace.id)
+        if (imageResult.success) {
+          console.log('✅ Featured image processed:', imageResult.featuredImageUrl)
+        } else {
+          console.warn('⚠️ Featured image processing failed:', imageResult.error)
+          // Continue with onboarding completion even if image extraction fails
+        }
+      }
+
       // Call the migration service with pricing plan
       const result = await onboardingService.completeOnboarding(pricingPlan)
-      
+
       if (!result.success) {
         console.error('❌ Migration failed:', result.error)
         return { success: false, error: result.error }
       }
-      
+
+      // PHASE 1: For Free plan, automatically make project public
+      if (pricingPlan === 'free' && result.workspaceId) {
+        console.log('🌍 Making Free plan project public...')
+
+        try {
+          const { onboardingService: service } = await import('@/lib/onboarding')
+          await service.makeWorkspacePublic(result.workspaceId)
+          console.log('✅ Project is now public and will appear in community!')
+        } catch (publicError) {
+          console.error('❌ Error making workspace public:', publicError)
+          // Don't fail the whole process if public publishing fails
+        }
+      }
+
       console.log('✅ Onboarding completed and migrated successfully!')
       return { success: true }
     } catch (error) {
       console.error('Error completing onboarding:', error)
-      return { 
-        success: false, 
+      return {
+        success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
       }
     }
-  }, [])
+  }, [moodboard])
 
   // Computed states
   const isReady = !isLoadingOnboarding && Object.keys(onboardingData).length > 0

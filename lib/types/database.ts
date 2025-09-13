@@ -183,6 +183,20 @@ export type Database = {
             foreignKeyName: "activity_logs_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
+            referencedRelation: "community_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "moodboard_stats"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "activity_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
@@ -251,6 +265,20 @@ export type Database = {
             foreignKeyName: "attachments_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
+            referencedRelation: "community_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "moodboard_stats"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "attachments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
@@ -294,6 +322,20 @@ export type Database = {
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "boards_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "community_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boards_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "moodboard_stats"
+            referencedColumns: ["workspace_id"]
+          },
           {
             foreignKeyName: "boards_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -365,6 +407,20 @@ export type Database = {
             foreignKeyName: "comments_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
+            referencedRelation: "community_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "moodboard_stats"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "comments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
@@ -378,10 +434,12 @@ export type Database = {
           created_by: string
           data: Json
           due_date: string | null
+          generation_metadata: Json | null
           id: string
           is_archived: boolean | null
           parent_id: string | null
           position: number | null
+          source_images: Json[] | null
           status: Database["public"]["Enums"]["item_status"] | null
           title: string
           type: string
@@ -395,10 +453,12 @@ export type Database = {
           created_by: string
           data?: Json
           due_date?: string | null
+          generation_metadata?: Json | null
           id?: string
           is_archived?: boolean | null
           parent_id?: string | null
           position?: number | null
+          source_images?: Json[] | null
           status?: Database["public"]["Enums"]["item_status"] | null
           title: string
           type: string
@@ -412,10 +472,12 @@ export type Database = {
           created_by?: string
           data?: Json
           due_date?: string | null
+          generation_metadata?: Json | null
           id?: string
           is_archived?: boolean | null
           parent_id?: string | null
           position?: number | null
+          source_images?: Json[] | null
           status?: Database["public"]["Enums"]["item_status"] | null
           title?: string
           type?: string
@@ -439,6 +501,145 @@ export type Database = {
           },
           {
             foreignKeyName: "items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "community_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "moodboard_stats"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      location_context_cache: {
+        Row: {
+          cached_at: string | null
+          context_data: Json
+          created_at: string | null
+          expires_at: string
+          id: number
+          location_key: string
+        }
+        Insert: {
+          cached_at?: string | null
+          context_data: Json
+          created_at?: string | null
+          expires_at: string
+          id?: number
+          location_key: string
+        }
+        Update: {
+          cached_at?: string | null
+          context_data?: Json
+          created_at?: string | null
+          expires_at?: string
+          id?: number
+          location_key?: string
+        }
+        Relationships: []
+      }
+      project_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_likes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "community_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_likes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "moodboard_stats"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "project_likes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_views: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          referrer: string | null
+          user_agent: string | null
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address: unknown
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          referrer?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_views_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "community_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_views_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "moodboard_stats"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "project_views_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -562,6 +763,20 @@ export type Database = {
             foreignKeyName: "workspace_members_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
+            referencedRelation: "community_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "moodboard_stats"
+            referencedColumns: ["workspace_id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
@@ -576,21 +791,29 @@ export type Database = {
           created_at: string | null
           currency: string | null
           description: string | null
+          featured_at: string | null
+          featured_image_url: string | null
           id: string
           invite_code: string | null
           is_archived: boolean | null
           is_public: boolean | null
+          last_activity_at: string | null
+          likes_count: number | null
           locale: string | null
           name: string
           onboarding_completed_at: string | null
           onboarding_data_couple: Json | null
           onboarding_data_planner: Json | null
           onboarding_migrated_at: string | null
+          pricing_plan: string | null
+          public_slug: string | null
+          remix_count: number | null
           slug: string | null
           timezone: string | null
           updated_at: string | null
           venue_location: string | null
           venue_name: string | null
+          views_count: number | null
           wedding_date: string | null
         }
         Insert: {
@@ -601,21 +824,29 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           description?: string | null
+          featured_at?: string | null
+          featured_image_url?: string | null
           id?: string
           invite_code?: string | null
           is_archived?: boolean | null
           is_public?: boolean | null
+          last_activity_at?: string | null
+          likes_count?: number | null
           locale?: string | null
           name: string
           onboarding_completed_at?: string | null
           onboarding_data_couple?: Json | null
           onboarding_data_planner?: Json | null
           onboarding_migrated_at?: string | null
+          pricing_plan?: string | null
+          public_slug?: string | null
+          remix_count?: number | null
           slug?: string | null
           timezone?: string | null
           updated_at?: string | null
           venue_location?: string | null
           venue_name?: string | null
+          views_count?: number | null
           wedding_date?: string | null
         }
         Update: {
@@ -626,21 +857,29 @@ export type Database = {
           created_at?: string | null
           currency?: string | null
           description?: string | null
+          featured_at?: string | null
+          featured_image_url?: string | null
           id?: string
           invite_code?: string | null
           is_archived?: boolean | null
           is_public?: boolean | null
+          last_activity_at?: string | null
+          likes_count?: number | null
           locale?: string | null
           name?: string
           onboarding_completed_at?: string | null
           onboarding_data_couple?: Json | null
           onboarding_data_planner?: Json | null
           onboarding_migrated_at?: string | null
+          pricing_plan?: string | null
+          public_slug?: string | null
+          remix_count?: number | null
           slug?: string | null
           timezone?: string | null
           updated_at?: string | null
           venue_location?: string | null
           venue_name?: string | null
+          views_count?: number | null
           wedding_date?: string | null
         }
         Relationships: [
@@ -655,7 +894,75 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      community_projects: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          featured_image_url: string | null
+          id: string | null
+          last_activity_at: string | null
+          likes_count: number | null
+          name: string | null
+          partner1_name: string | null
+          partner2_name: string | null
+          pricing_plan: string | null
+          public_slug: string | null
+          remix_count: number | null
+          style_preferences: string | null
+          trending_score: number | null
+          views_count: number | null
+          wedding_date: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          featured_image_url?: string | null
+          id?: string | null
+          last_activity_at?: string | null
+          likes_count?: number | null
+          name?: string | null
+          partner1_name?: never
+          partner2_name?: never
+          pricing_plan?: string | null
+          public_slug?: string | null
+          remix_count?: number | null
+          style_preferences?: never
+          trending_score?: never
+          views_count?: number | null
+          wedding_date?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          featured_image_url?: string | null
+          id?: string | null
+          last_activity_at?: string | null
+          likes_count?: number | null
+          name?: string | null
+          partner1_name?: never
+          partner2_name?: never
+          pricing_plan?: string | null
+          public_slug?: string | null
+          remix_count?: number | null
+          style_preferences?: never
+          trending_score?: never
+          views_count?: number | null
+          wedding_date?: string | null
+        }
+        Relationships: []
+      }
+      moodboard_stats: {
+        Row: {
+          composed_moodboards: number | null
+          latest_moodboard_created: string | null
+          multi_image_moodboards: number | null
+          single_image_moodboards: number | null
+          total_moodboards: number | null
+          workspace_id: string | null
+          workspace_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_user_perform_action: {
@@ -665,6 +972,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_expired_location_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       complete_onboarding: {
         Args: { workspace_uuid: string }
         Returns: boolean
@@ -673,6 +984,27 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_public_slug: {
+        Args: { workspace_id: string; workspace_name: string }
+        Returns: string
+      }
+      get_location_context: {
+        Args: { p_location_key: string }
+        Returns: Json
+      }
+      get_moodboard_with_metadata: {
+        Args: { p_workspace_id: string }
+        Returns: {
+          created_at: string
+          created_by: string
+          data: Json
+          generation_metadata: Json
+          id: string
+          source_images: Json[]
+          title: string
+          updated_at: string
+        }[]
+      }
       get_user_default_workspace: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -680,6 +1012,16 @@ export type Database = {
       get_workspace_stats: {
         Args: { workspace_uuid: string }
         Returns: Json
+      }
+      increment_project_views: {
+        Args: {
+          project_workspace_id: string
+          viewer_ip: unknown
+          viewer_referrer?: string
+          viewer_user_agent?: string
+          viewer_user_id?: string
+        }
+        Returns: undefined
       }
       log_activity: {
         Args: {
@@ -690,6 +1032,22 @@ export type Database = {
           workspace_uuid: string
         }
         Returns: undefined
+      }
+      set_location_context: {
+        Args: {
+          p_context_data: Json
+          p_expires_hours?: number
+          p_location_key: string
+        }
+        Returns: boolean
+      }
+      toggle_project_like: {
+        Args: {
+          liker_ip?: unknown
+          liker_user_id?: string
+          project_workspace_id: string
+        }
+        Returns: boolean
       }
       user_account_role: {
         Args: { account_uuid: string }

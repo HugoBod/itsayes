@@ -9,7 +9,7 @@
 - **Tailwind CSS 3.4.17** - **JAMAIS upgrader vers v4 (instable)**
 - **React 19.1.0** - Stable
 - **TypeScript 5** - Stable
-- **pnpm** - Package manager exclusif, **JAMAIS npm ou yarn**
+- **npm** - Package manager standard du projet
 
 ### **⚠️ CONFIGURATIONS CRITIQUES :**
 - `tailwind.config.js` (pas .ts) - Contient toutes les couleurs custom
@@ -28,8 +28,8 @@
 
 **✅ Solution appliquée :**
 ```bash
-pnpm remove tailwindcss @tailwindcss/postcss
-pnpm add -D tailwindcss@^3.4 postcss autoprefixer
+npm uninstall tailwindcss @tailwindcss/postcss
+npm install -D tailwindcss@^3.4 postcss autoprefixer
 ```
 
 **🛡️ Protection :**
@@ -91,13 +91,13 @@ pnpm add -D tailwindcss@^3.4 postcss autoprefixer
 
 ### **📋 AVANT TOUTE MODIFICATION :**
 1. **Lire CLAUDE.md** - Vérifier les instructions du projet
-2. **Vérifier les versions actuelles** - `pnpm list`
+2. **Vérifier les versions actuelles** - `npm list`
 3. **Analyser l'historique git** - `git log --oneline -5`
 4. **Identifier le vrai problème** avant d'agir
 
 ### **🚫 INTERDICTIONS FORMELLES :**
 - **JAMAIS upgrader Tailwind vers v4** (instable, casse tout)
-- **JAMAIS utiliser npm ou yarn** (pnpm uniquement)
+- **Utiliser npm** comme package manager standard
 - **JAMAIS supprimer tailwind.config.js** (contient couleurs custom)
 - **JAMAIS modifier la stack** sans justification critique
 - **JAMAIS proposer de "downgrade"** sans analyser pourquoi
@@ -148,7 +148,7 @@ pnpm add -D tailwindcss@^3.4 postcss autoprefixer
 1. Vérifier les processus actifs : `ps aux | grep next`
 2. Nettoyer proprement : `pkill -f "next-server"`
 3. Vérifier les configs actuelles avant modification
-4. Redémarrer : `pnpm dev`
+4. Redémarrer : `npm run dev`
 
 ### **✅ EN CAS DE PROBLÈME CSS/TAILWIND :**
 1. **NE PAS upgrader vers v4**

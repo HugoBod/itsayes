@@ -235,7 +235,7 @@ useOnboardingNavigation() // Navigation onboarding
 supabase start
 
 # Développement Next.js
-pnpm run dev
+npm run dev
 
 # Tests complets
 node test-user-journey.js

@@ -186,7 +186,8 @@ export default function CommunityPage() {
                   likes={project.likes_count}
                   views={project.views_count}
                   isPublic={true}
-                  publicSlug={project.public_slug}
+                  publicId={project.public_id}
+                  featuredImage={project.featured_image_url}
                 />
               ))}
             </div>

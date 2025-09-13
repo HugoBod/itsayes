@@ -8,7 +8,7 @@ export interface CommunityProject {
   id: string
   name: string
   description: string | null
-  public_slug: string
+  public_id: string
   wedding_date: string | null
   pricing_plan: 'free' | 'pro' | 'team'
   likes_count: number
@@ -17,6 +17,7 @@ export interface CommunityProject {
   created_at: string
   last_activity_at: string
   style_preferences: string | null
+  featured_image_url?: string
   partner1_name?: string
   partner2_name?: string
   trending_score?: number
@@ -33,8 +34,12 @@ interface CommunityService {
     offset?: number
   ) => Promise<{ projects: CommunityProject[]; hasMore: boolean; error?: string }>
   
+  getProjectById: (id: string) => Promise<{ project: CommunityProject | null; error?: string }>
+
   getProjectBySlug: (slug: string) => Promise<{ project: CommunityProject | null; error?: string }>
-  
+
+  getProjectByPublicId: (publicId: string) => Promise<{ project: CommunityProject | null; error?: string }>
+
   incrementProjectViews: (
     projectId: string,
     userAgent?: string,
@@ -67,22 +72,23 @@ class CommunityDataService implements CommunityService {
           id,
           name,
           description,
-          public_slug,
+          public_id,
           wedding_date,
-          pricing_plan,
+          created_at,
+          last_activity_at,
+          featured_image_url,
+          style_themes,
+          color_palette,
           likes_count,
           views_count,
           remix_count,
-          created_at,
-          last_activity_at,
-          style_preferences,
           trending_score
         `)
         .range(offset, offset + limit - 1)
       
-      // Apply style filter
+      // Apply style filter to style themes
       if (style && style !== 'All') {
-        query = query.ilike('style_preferences', `%${style}%`)
+        query = query.ilike('style_themes', `%${style}%`)
       }
       
       // Apply sorting based on filter
@@ -96,23 +102,53 @@ class CommunityDataService implements CommunityService {
           query = query.order('created_at', { ascending: false })
           break
         case 'Trending':
-          query = query.order('trending_score', { ascending: false, nullsLast: true })
+          query = query.order('trending_score', { ascending: false })
                       .order('last_activity_at', { ascending: false })
           break
       }
       
       const { data, error } = await query
-      
+
       if (error) {
-        console.error('Error fetching public projects:', error)
-        return { projects: [], hasMore: false, error: error.message }
+        console.error('Error fetching public projects:', {
+          error,
+          errorMessage: error?.message,
+          errorDetails: error?.details,
+          errorCode: error?.code,
+          errorHint: error?.hint
+        })
+        return { projects: [], hasMore: false, error: error.message || 'Unknown database error' }
       }
+
+      // Log successful query for debugging
+      console.log(`✅ Community query successful: Found ${data?.length || 0} public projects`)
       
       // Check if there are more projects
       const hasMore = data.length === limit
-      
+
+      // Map community project data (already filtered and processed by the view)
+      const projects: CommunityProject[] = data.map(project => ({
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        public_id: project.public_id || '',
+        wedding_date: project.wedding_date,
+        pricing_plan: 'free' as const, // Community projects are all free plan
+        likes_count: project.likes_count || 0,
+        views_count: project.views_count || 0,
+        remix_count: project.remix_count || 0,
+        created_at: project.created_at || new Date().toISOString(),
+        last_activity_at: project.last_activity_at || new Date().toISOString(),
+        featured_image_url: project.featured_image_url,
+        style_preferences: JSON.stringify({
+          themes: project.style_themes ? JSON.parse(project.style_themes) : [],
+          colorPalette: project.color_palette || null
+        }),
+        trending_score: project.trending_score || 0
+      }))
+
       return {
-        projects: data as CommunityProject[],
+        projects,
         hasMore,
       }
     } catch (error) {
@@ -125,50 +161,139 @@ class CommunityDataService implements CommunityService {
     }
   }
   
-  async getProjectBySlug(slug: string): Promise<{ project: CommunityProject | null; error?: string }> {
+  async getProjectById(id: string): Promise<{ project: CommunityProject | null; error?: string }> {
     try {
       const supabase = createClientComponentClient()
-      
+
       const { data, error } = await supabase
         .from('community_projects')
         .select(`
           id,
           name,
           description,
-          public_slug,
+          public_id,
           wedding_date,
-          pricing_plan,
+          created_at,
+          last_activity_at,
+          featured_image_url,
+          style_themes,
+          color_palette,
           likes_count,
           views_count,
           remix_count,
-          created_at,
-          last_activity_at,
-          style_preferences,
-          partner1_name,
-          partner2_name,
           trending_score
         `)
-        .eq('public_slug', slug)
+        .eq('public_id', id)
         .single()
-      
+
       if (error) {
         if (error.code === 'PGRST116') {
           return { project: null }  // Project not found
         }
-        console.error('Error fetching project by slug:', error)
+        console.error('Error fetching project by id:', error)
         return { project: null, error: error.message }
       }
-      
-      return { project: data as CommunityProject }
+
+      // Map community project data (already processed by the view)
+      const project: CommunityProject = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        public_id: data.public_id || '',
+        wedding_date: data.wedding_date,
+        pricing_plan: 'free' as const, // Community projects are all free plan
+        likes_count: data.likes_count || 0,
+        views_count: data.views_count || 0,
+        remix_count: data.remix_count || 0,
+        created_at: data.created_at || new Date().toISOString(),
+        last_activity_at: data.last_activity_at || new Date().toISOString(),
+        featured_image_url: data.featured_image_url,
+        style_preferences: JSON.stringify({
+          themes: data.style_themes ? JSON.parse(data.style_themes) : [],
+          colorPalette: data.color_palette || null
+        }),
+        // Anonymized for privacy (managed by view)
+        partner1_name: 'Partner 1',
+        partner2_name: 'Partner 2',
+        trending_score: data.trending_score || 0
+      }
+
+      return { project }
     } catch (error) {
-      console.error('Error in getProjectBySlug:', error)
-      return { 
-        project: null, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      console.error('Error in getProjectById:', error)
+      return {
+        project: null,
+        error: error instanceof Error ? error.message : 'Unknown error'
       }
     }
   }
-  
+
+  async getProjectBySlug(slug: string): Promise<{ project: CommunityProject | null; error?: string }> {
+    try {
+      const supabase = createClientComponentClient()
+
+      // Query the community_projects view for the project by public_slug
+      const { data, error } = await supabase
+        .from('community_projects')
+        .select(`
+          id,
+          name,
+          description,
+          public_id,
+          wedding_date,
+          featured_image_url,
+          style_themes,
+          color_palette,
+          likes_count,
+          views_count,
+          remix_count,
+          trending_score
+        `)
+        .eq('public_id', slug)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return { project: null, error: 'Project not found' }
+        }
+        console.error('Error fetching project by slug:', error)
+        return { project: null, error: error.message }
+      }
+
+      // Map to CommunityProject interface
+      const project: CommunityProject = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        public_id: data.public_id || '',
+        wedding_date: data.wedding_date,
+        pricing_plan: 'free' as const, // Community projects are all free plan
+        likes_count: data.likes_count || 0,
+        views_count: data.views_count || 0,
+        remix_count: data.remix_count || 0,
+        created_at: data.created_at || new Date().toISOString(),
+        last_activity_at: data.last_activity_at || new Date().toISOString(),
+        featured_image_url: data.featured_image_url,
+        style_preferences: JSON.stringify({
+          themes: data.style_themes ? JSON.parse(data.style_themes) : [],
+          colorPalette: data.color_palette || null
+        }),
+        // Anonymized for privacy (managed by view)
+        partner1_name: 'Partner 1',
+        partner2_name: 'Partner 2',
+        trending_score: data.trending_score || 0
+      }
+
+      return { project }
+    } catch (error) {
+      console.error('Error in getProjectBySlug:', error)
+      return {
+        project: null,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+
   async incrementProjectViews(
     projectId: string,
     userAgent: string = '',
@@ -176,33 +301,36 @@ class CommunityDataService implements CommunityService {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const supabase = createClientComponentClient()
-      
-      // Get user info if available
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      // Get IP address (approximation in browser context)
-      const ipAddress = '127.0.0.1' // In production, this would be handled server-side
-      
-      // Call the increment function
-      const { error } = await supabase.rpc('increment_project_views', {
-        project_workspace_id: projectId,
-        viewer_ip: ipAddress,
-        viewer_user_id: user?.id || null,
-        viewer_user_agent: userAgent,
-        viewer_referrer: referrer
-      })
-      
+
+      // Get current count and increment
+      const { data: currentData } = await supabase
+        .from('workspaces')
+        .select('views_count')
+        .eq('id', projectId)
+        .single()
+
+      const newViewsCount = (currentData?.views_count || 0) + 1
+
+      const { error } = await supabase
+        .from('workspaces')
+        .update({
+          views_count: newViewsCount,
+          last_activity_at: new Date().toISOString()
+        })
+        .eq('id', projectId)
+        .eq('is_public', true)
+
       if (error) {
         console.error('Error incrementing views:', error)
         return { success: false, error: error.message }
       }
-      
+
       return { success: true }
     } catch (error) {
       console.error('Error in incrementProjectViews:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       }
     }
   }
@@ -212,40 +340,47 @@ class CommunityDataService implements CommunityService {
   ): Promise<{ liked: boolean; newCount: number; error?: string }> {
     try {
       const supabase = createClientComponentClient()
-      
-      // Get user info
-      const { data: { user } } = await supabase.auth.getUser()
-      const ipAddress = '127.0.0.1' // In production, this would be handled server-side
-      
-      // Call the toggle function
-      const { data, error } = await supabase.rpc('toggle_project_like', {
-        project_workspace_id: projectId,
-        liker_user_id: user?.id || null,
-        liker_ip: user ? null : ipAddress // Only use IP for anonymous users
-      })
-      
+
+      // Get current count and increment
+      const { data: currentData } = await supabase
+        .from('workspaces')
+        .select('likes_count')
+        .eq('id', projectId)
+        .single()
+
+      const newLikesCount = (currentData?.likes_count || 0) + 1
+
+      const { error } = await supabase
+        .from('workspaces')
+        .update({
+          likes_count: newLikesCount,
+          last_activity_at: new Date().toISOString()
+        })
+        .eq('id', projectId)
+        .eq('is_public', true)
+
       if (error) {
         console.error('Error toggling like:', error)
         return { liked: false, newCount: 0, error: error.message }
       }
-      
+
       // Get updated like count
       const { data: workspace } = await supabase
         .from('workspaces')
         .select('likes_count')
         .eq('id', projectId)
         .single()
-      
-      return { 
-        liked: data, // true if like was added, false if removed
+
+      return {
+        liked: true, // Always true for now since we're just incrementing
         newCount: workspace?.likes_count || 0
       }
     } catch (error) {
       console.error('Error in toggleProjectLike:', error)
-      return { 
-        liked: false, 
-        newCount: 0, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        liked: false,
+        newCount: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
       }
     }
   }
@@ -319,15 +454,22 @@ class CommunityDataService implements CommunityService {
         return { success: false, error: 'Failed to create remix project' }
       }
       
-      // Increment remix count on original project
-      await supabase.rpc('sql', {
-        query: `
-          UPDATE workspaces 
-          SET remix_count = remix_count + 1, last_activity_at = now() 
-          WHERE id = $1
-        `,
-        params: [originalProjectId]
-      })
+      // Get current remix count and increment
+      const { data: originalData } = await supabase
+        .from('workspaces')
+        .select('remix_count')
+        .eq('id', originalProjectId)
+        .single()
+
+      const newRemixCount = (originalData?.remix_count || 0) + 1
+
+      await supabase
+        .from('workspaces')
+        .update({
+          remix_count: newRemixCount,
+          last_activity_at: new Date().toISOString()
+        })
+        .eq('id', originalProjectId)
       
       return { 
         success: true, 
@@ -369,6 +511,7 @@ export const communityService = new CommunityDataService()
 export function useCommunityData() {
   return {
     getPublicProjects: communityService.getPublicProjects.bind(communityService),
+    getProjectById: communityService.getProjectById.bind(communityService),
     getProjectBySlug: communityService.getProjectBySlug.bind(communityService),
     incrementProjectViews: communityService.incrementProjectViews.bind(communityService),
     toggleProjectLike: communityService.toggleProjectLike.bind(communityService),
