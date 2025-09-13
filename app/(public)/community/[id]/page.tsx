@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { cache } from 'react'
 import { notFound } from 'next/navigation'
 import { serverCommunityService } from '@/lib/community-server'
 import { PublicMagazineMoodboard } from '@/components/magazine/PublicMagazineMoodboard'
@@ -10,10 +11,16 @@ interface PageProps {
   }>
 }
 
+// Cache the database call to prevent duplicate queries
+const getCachedProject = cache(async (id: string) => {
+  console.log('🔍 ServerCommunityService.getProjectById called with id:', id)
+  return await serverCommunityService.getProjectById(id)
+})
+
 // Generate metadata for SEO and social sharing
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
-  const { project, error } = await serverCommunityService.getProjectById(id)
+  const { project, error } = await getCachedProject(id)
 
   if (error || !project) {
     return {
@@ -77,9 +84,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PublicProjectPage({ params }: PageProps) {
-  // Fetch project data
+  // Fetch project data (cached to avoid duplicate calls)
   const { id } = await params
-  const { project, error } = await serverCommunityService.getProjectById(id)
+  const { project, error } = await getCachedProject(id)
 
   if (error || !project) {
     notFound()

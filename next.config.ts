@@ -28,10 +28,14 @@ const nextConfig: NextConfig = {
     // Configure allowed quality values to prevent warnings
     qualities: [60, 75, 90, 95, 100],
   },
-  // Enable optimizePackageImports and scroll restoration
+  // Performance optimizations
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', '@supabase/supabase-js'],
     scrollRestoration: true,
+  },
+  // Optimize production performance
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
   },
 };
 
