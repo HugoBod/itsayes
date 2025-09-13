@@ -95,9 +95,6 @@ export default async function PublicProjectPage({ params }: PageProps) {
   // Anonymize project data for public display
   const anonymizedData = anonymizeProjectData(project)
 
-  // Debug logging
-  console.log('🔍 Public project page data:', { id, project, anonymizedData })
-
   return (
     <div className="min-h-screen bg-white">
       {/* SEO-friendly structured data */}

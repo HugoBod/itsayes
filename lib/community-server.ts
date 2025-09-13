@@ -16,7 +16,6 @@ interface ServerCommunityService {
 class ServerCommunityDataService implements ServerCommunityService {
 
   async getProjectById(id: string): Promise<{ project: CommunityProject | null; error?: string }> {
-    console.log('🔍 ServerCommunityService.getProjectById called with id:', id)
     try {
       const supabase = await createServerComponentClient()
 
@@ -40,16 +39,13 @@ class ServerCommunityDataService implements ServerCommunityService {
         .single()
 
       if (error) {
-        console.log('🔍 Database error:', error)
         if (error.code === 'PGRST116') {
-          console.log('🔍 Project not found (PGRST116)')
           return { project: null }  // Project not found
         }
         console.error('Error fetching project by id:', error)
         return { project: null, error: error.message }
       }
 
-      console.log('🔍 Database result:', data)
 
       // Transform workspace data to CommunityProject format
       const project: CommunityProject = {
